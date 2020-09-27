@@ -1,21 +1,37 @@
-.pickletable > table {
+
+.pickletable{
+    height: 100%;
+    overflow: auto;
+}
+.pickletable  table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
-    width: 100%;
+    border: 1px solid darkgrey;
 }
-  
-.pickletable > td, th {
+.pickletable td, 
+.pickletable th {
     border: 1px solid #dddddd;
     text-align: left;
     padding: 8px;
 }
-
-
-
-.pickletable > tbody{
-    display:block;
-    height:100%;
-    overflow:auto;
+.pickletable th {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4);
+    background-color: white;
 }
-  
-  
+
+.pickletable .divTable {
+    height: 95%;
+    overflow: auto;
+    border: 1px solid darkgrey;
+    border-radius: 5px;
+}
+
+.pickletable .divPagination {
+    height: 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

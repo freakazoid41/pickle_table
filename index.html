@@ -11,29 +11,46 @@
         <link href="assets/style.css" rel="stylesheet">
     </head>
 
-    <body>
+    <body style="margin: 0;">
 
-        <section>
-            <h1>Table</h1>
-            <div id="div_table"></div>
+        <div style="height: 100vh;">
+            <div style="height:20vh"><label>Table</label></div>
+            
+            <div style="height:80vh">
+                <div id="div_table"></div>
+            </div>
 
-        </section>
-
+        </div>
         <script type="module">
             import PickleTable from './assets/script.js';
+
+            let data = [];
+            for(let i=0;i<35;i++){
+                data.push({
+                    id:i+1,
+                    title:'title'+i,
+                });
+            }
+
+
 
             new PickleTable({
                 container:'#div_table',
                 headers:[
                     {
-                        title:'falan',
+                        title:'Id',
+                        key:'id'
                     },
                     {
-                        title:'boyle',
+                        title:'Title',
+                        key:'title'
                     }
-                ]
+                ],
+                pageLimit:50,
+                data:data
             });
         </script>
+        
     </body>
 
 </html>
