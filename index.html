@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <title></title>
+        <meta name="author" content="">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link href="assets/style.css" rel="stylesheet">
+    </head>
+
+    <body>
+
+        <section>
+            <h1>Table</h1>
+            <div id="div_table"></div>
+
+        </section>
+
+        <script type="module">
+            import PickleTable from './assets/script.js';
+
+            new PickleTable({
+                container:'#div_table',
+                headers:[
+                    {
+                        title:'falan',
+                    },
+                    {
+                        title:'boyle',
+                    }
+                ]
+            });
+        </script>
+    </body>
+
+</html>
