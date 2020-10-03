@@ -24,7 +24,12 @@
         <script type="module">
             import PickleTable from './assets/script.js';
 
-            let data = [];
+
+            /**
+             * local data example
+             * /
+
+            /*let data = [];
             for(let i=0;i<35;i++){
                 data.push({
                     id:i+1,
@@ -34,7 +39,7 @@
 
 
 
-            new PickleTable({
+            const table = new PickleTable({
                 container:'#div_table',
                 headers:[
                     {
@@ -46,9 +51,61 @@
                         key:'title'
                     }
                 ],
-                pageLimit:50,
+                pageLimit:10,
                 data:data
+            });*/
+
+
+            /**
+             * ajax data example 
+             * 
+             */
+            const table = new PickleTable({
+                container:'#div_table',
+                headers:[
+                    {
+                        title:'Id',
+                        key:'id'
+                    },
+                    {
+                        title:'Title',
+                        key:'title'
+                    }
+                ],
+                type:'ajax',
+                ajax:{
+                    url:'src/responder.php',
+                    pageLimit:20, // put '-1' for getting all data
+                    data:{
+                        /*filter:{},
+                        order:{},*/
+                    }
+                },
             });
+
+            setTimeout(() => {
+                /**
+                 * example methods
+                 */
+
+                //clean table data
+                table.clearData();
+
+                //add data to table
+                //to-do
+
+                //get data from table
+                //to-do
+
+
+                //update table data
+                //to-do
+                
+            }, 1000);
+            
+
+
+
         </script>
         
     </body>
