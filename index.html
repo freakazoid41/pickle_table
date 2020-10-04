@@ -14,7 +14,10 @@
     <body style="margin: 0;">
 
         <div style="height: 100vh;">
-            <div style="height:20vh"><label>Table</label></div>
+            <div style="height:20vh;text-align: center;">
+                <button type="button" id="btn_add">Add Row</button>
+            
+            </div>
             
             <div style="height:80vh">
                 <div id="div_table"></div>
@@ -27,9 +30,8 @@
 
             /**
              * local data example
-             * /
-
-            /*let data = [];
+             */
+            let data = [];
             for(let i=0;i<35;i++){
                 data.push({
                     id:i+1,
@@ -52,24 +54,42 @@
                     }
                 ],
                 pageLimit:10,
+                //row formatting callback
+                rowFormatter:(elm,data)=>{
+                    console.log(elm,data);
+                    //modify row element
+                    //elm.style.backgroundColor = 'yellow';
+                    //modify data
+                    data.rowAdded = 'i im added from row';
+                    return data;
+                },
+                //row click callback
+                rowClick:(elm,data)=>{
+                    console.log(elm,data);
+                },
+                afterRender:(currentData,currentPage)=>{
+
+                },
                 data:data
-            });*/
+            });
 
 
             /**
              * ajax data example 
              * 
              */
-            const table = new PickleTable({
+            /*const table = new PickleTable({
                 container:'#div_table',
                 headers:[
                     {
                         title:'Id',
-                        key:'id'
+                        key:'id',
+                        width:'10%'
                     },
                     {
                         title:'Title',
                         key:'title',
+                        width:'100px',
                         columnFormatter:(elm,rowData,columnData)=>{
                             //this method will manuplate column content
                             //console.log(elm,rowData);
@@ -79,6 +99,7 @@
                         columnClick:(elm,rowData)=>{
                             //this method will manuplate column content
                             //console.log(elm,rowData);
+                            console.log('column clicked..',elm);
                         },
                     }
                 ],
@@ -87,7 +108,7 @@
                 rowFormatter:(elm,data)=>{
                     console.log(elm,data);
                     //modify row element
-                    elm.style.backgroundColor = 'yellow';
+                    //elm.style.backgroundColor = 'yellow';
                     //modify data
                     data.rowAdded = 'i im added from row';
                     return data;
@@ -100,11 +121,11 @@
                     url:'src/responder.php',
                     pageLimit:20, // put '-1' for getting all data
                     data:{
-                        /*filter:{},
-                        order:{},*/
+                        //filter:{},
+                        //order:{},
                     }
                 },
-            });
+            });*/
 
 
             /**
@@ -129,7 +150,13 @@
             }, 1000);*/
             
 
-
+            //test events
+            document.getElementById('btn_add').addEventListener('click',()=>{
+                table.addRow({
+                    id:(new Date).getTime(),
+                    title:'title falan boyle',
+                });
+            });
 
         </script>
         
