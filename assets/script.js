@@ -20,9 +20,7 @@ export default class PickleTable {
             //events
             afterRender:null,
             rowClick:null,
-            rowCreated:null,
-            columnCreated:null,
-            columnClick:null
+            rowFormatter:null
         };  
 
         //set custom table config
@@ -226,9 +224,6 @@ export default class PickleTable {
         });
     }
 
-
-
-
     /**
      * this method clear all data on table 
      */
@@ -255,11 +250,34 @@ export default class PickleTable {
      */
     addRow(data){
         const row = document.createElement('tr');
+        //trigger row formatter if exist
+        if(this.config.rowFormatter !== undefined){
+            const modifiedData = this.config.rowFormatter(row,data);
+            //if new data returned set to row data
+            if(modifiedData !== undefined) data = modifiedData;
+        }
+
+        //set row click if setted
+        if(this.config.rowClick !== undefined){
+            row.onclick = () => this.config.rowClick(row,data);
+        }
+
         for(let i = 0;i<this.config.headers.length;i++){
             const column = document.createElement('td');
-            column.innerHTML = data[this.config.headers[i].key];
+            //trigger column formatter if exist
+            if(this.config.headers[i].columnFormatter !== undefined){
+                column.innerHTML =this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
+            }else{
+                column.innerHTML = data[this.config.headers[i].key];
+            }
             row.appendChild(column);
+            //set columnt click if exist
+            if(this.config.headers[i].columnClick !== undefined){
+                column.onclick = () => this.config.headers[i].columnClick(column,data,data[this.config.headers[i].key]);
+            }
         }
+
+        //append row to body
         this.config.body.appendChild(row);
 
         //set data to container

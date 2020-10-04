@@ -7,7 +7,7 @@
         <meta name="author" content="">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-
+        <link href="assets/theme.css" rel="stylesheet">
         <link href="assets/style.css" rel="stylesheet">
     </head>
 
@@ -69,10 +69,33 @@
                     },
                     {
                         title:'Title',
-                        key:'title'
+                        key:'title',
+                        columnFormatter:(elm,rowData,columnData)=>{
+                            //this method will manuplate column content
+                            //console.log(elm,rowData);
+
+                            return columnData+'_formattedd..';
+                        },
+                        columnClick:(elm,rowData)=>{
+                            //this method will manuplate column content
+                            //console.log(elm,rowData);
+                        },
                     }
                 ],
                 type:'ajax',
+                //row formatting callback
+                rowFormatter:(elm,data)=>{
+                    console.log(elm,data);
+                    //modify row element
+                    elm.style.backgroundColor = 'yellow';
+                    //modify data
+                    data.rowAdded = 'i im added from row';
+                    return data;
+                },
+                //row click callback
+                rowClick:(elm,data)=>{
+                    console.log(elm,data);
+                },
                 ajax:{
                     url:'src/responder.php',
                     pageLimit:20, // put '-1' for getting all data
@@ -83,10 +106,12 @@
                 },
             });
 
-            setTimeout(() => {
-                /**
-                 * example methods
-                 */
+
+            /**
+             * example methods
+             */
+            /*setTimeout(() => {
+               
 
                 //clean table data
                 table.clearData();
@@ -101,7 +126,7 @@
                 //update table data
                 //to-do
                 
-            }, 1000);
+            }, 1000);*/
             
 
 
