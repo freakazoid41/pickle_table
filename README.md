@@ -2,7 +2,7 @@
 
 # Pickle Table
 
-> Pickle table is a table component written as completely pure javascript. Just send json file to object and have fun :-D 
+> Pickle table is a table component written as completely pure javascript. Just put a data array or url data endpoint and have fun :-D 
 
 > Pickle table does't need anything except you !
 
