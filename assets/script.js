@@ -229,6 +229,7 @@ export default class PickleTable {
      * @param {object} data 
      */
     addRow(data,outside=true){
+        data.columnElms = {};
         const row = document.createElement('tr');
         //trigger row formatter if exist
         if(this.config.rowFormatter !== null){
@@ -246,7 +247,7 @@ export default class PickleTable {
             const column = document.createElement('td');
             //trigger column formatter if exist
             if(this.config.headers[i].columnFormatter !== undefined){
-                column.innerHTML =this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
+                column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
             }else{
                 column.innerHTML = data[this.config.headers[i].key];
             }
@@ -255,9 +256,12 @@ export default class PickleTable {
             if(this.config.headers[i].columnClick !== undefined){
                 column.onclick = () => this.config.headers[i].columnClick(column,data,data[this.config.headers[i].key]);
             }
+
+            data.columnElms[this.config.headers[i].key] = column;
         }
 
-       
+        //set elements to data
+        data.rowElm = row;
 
         //set data to container
         this.config.currentData['row_'+data.id] = data;
@@ -288,6 +292,68 @@ export default class PickleTable {
             this.config.body.append(row);
         }
     }
+
+    /**
+     * this method will update table row with formatter callback
+     * @param {int} rowId 
+     * @param {object} data 
+     */
+    updateRow(rowId,data = null){
+        const row = this.config.currentData['row_'+rowId];
+        if(row !== undefined){
+            //foreach header
+            for(let i = 0;i<this.config.headers.length;i++){
+                //column key
+                const key = this.config.headers[i].key;
+                if(data[key] !== undefined){
+                    //get column element
+                    console.log(row)
+                    const column = row.columnElms[key];
+                    //update element
+                    if(this.config.headers[i].columnFormatter !== undefined){
+                        column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[key]);
+                    }else{
+                        column.innerHTML = data[key];
+                    }
+                    this.config.currentData['row_'+rowId][key] = data[key];
+                }
+            }
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * this method will delete table row 
+     * @param {int} rowId 
+     */
+    deleteRow(rowId){
+        if(this.config.currentData['row_'+rowId] !== undefined){
+            //remove element
+            this.config.currentData['row_'+rowId].rowElm.remove();
+            //delete item from stack
+            delete this.config.currentData['row_'+rowId];
+            //recalculate page count if local data
+            if(this.config.type === 'local'){
+                const list = Object.values(this.config.tableData);
+                //if all data is not wanted
+                this.config.pageCount = list.length!==0 ? Math.ceil(list.length / this.config.pageLimit) : 1;
+                //recalculate pagination
+                this.calcPagination();
+                //get an item from another page to this page 
+                const data = list.slice(this.config.currentPage*this.config.pageLimit , (this.config.currentPage+1)*this.config.pageLimit);
+
+                //add next page item to this page
+                if(data.length > 0)this.addRow(data[0],false);
+            }
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+
 
     /**
      * this method will calculate pagination

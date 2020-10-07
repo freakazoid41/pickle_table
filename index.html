@@ -16,7 +16,8 @@
         <div style="height: 100vh;">
             <div style="height:20vh;text-align: center;">
                 <button type="button" id="btn_add">Add Row</button>
-            
+                <button type="button" id="btn_update">Update Row</button>
+                <button type="button" id="btn_delete">Delete Row</button>
             </div>
             
             <div style="height:80vh">
@@ -26,7 +27,30 @@
         </div>
         <script type="module">
             import PickleTable from './assets/script.js';
+            //set headers
+            const headers = [
+                {
+                    title:'Id',
+                    key:'id',
+                    width:'10%'
+                },
+                {
+                    title:'Title',
+                    key:'title',
+                    width:'100px',
+                    columnFormatter:(elm,rowData,columnData)=>{
+                        //this method will manuplate column content
+                        //console.log(elm,rowData);
 
+                        return columnData+'_formattedd..';
+                    },
+                    columnClick:(elm,rowData)=>{
+                        //this method will manuplate column content
+                        //console.log(elm,rowData);
+                        console.log('column clicked..',elm);
+                    },
+                }
+            ]
 
             /**
              * local data example
@@ -43,16 +67,7 @@
 
             const table = new PickleTable({
                 container:'#div_table',
-                headers:[
-                    {
-                        title:'Id',
-                        key:'id'
-                    },
-                    {
-                        title:'Title',
-                        key:'title'
-                    }
-                ],
+                headers:headers,
                 pageLimit:10,
                 //row formatting callback
                 rowFormatter:(elm,data)=>{
@@ -80,29 +95,7 @@
              */
             /*const table = new PickleTable({
                 container:'#div_table',
-                headers:[
-                    {
-                        title:'Id',
-                        key:'id',
-                        width:'10%'
-                    },
-                    {
-                        title:'Title',
-                        key:'title',
-                        width:'100px',
-                        columnFormatter:(elm,rowData,columnData)=>{
-                            //this method will manuplate column content
-                            //console.log(elm,rowData);
-
-                            return columnData+'_formattedd..';
-                        },
-                        columnClick:(elm,rowData)=>{
-                            //this method will manuplate column content
-                            //console.log(elm,rowData);
-                            console.log('column clicked..',elm);
-                        },
-                    }
-                ],
+                headers:headers,
                 type:'ajax',
                 //row formatting callback
                 rowFormatter:(elm,data)=>{
@@ -151,6 +144,7 @@
             
 
             //test events
+            //test add row
             document.getElementById('btn_add').addEventListener('click',()=>{
                 table.addRow({
                     id:(new Date).getTime(),
@@ -158,6 +152,18 @@
                 });
             });
 
+
+            //test update row
+            document.getElementById('btn_update').addEventListener('click',()=>{
+                table.updateRow(1,{
+                    title:'i m updated title => '+(new Date).getTime(),
+                });
+            });
+
+             //test delete row
+             document.getElementById('btn_delete').addEventListener('click',()=>{
+                table.deleteRow(2);
+            });
         </script>
         
     </body>
