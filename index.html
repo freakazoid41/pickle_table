@@ -7,6 +7,7 @@
         <meta name="author" content="">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="index.css" rel="stylesheet">
         <link href="assets/theme.css" rel="stylesheet">
         <link href="assets/style.css" rel="stylesheet">
     </head>
@@ -14,16 +15,46 @@
     <body style="margin: 0;">
 
         <div style="height: 100vh;">
-            <div style="height:20vh;text-align: center;">
-                <button type="button" id="btn_add">Add Row</button>
-                <button type="button" id="btn_update">Update Row</button>
-                <button type="button" id="btn_delete">Delete Row</button>
+            <div style="height:5vh;text-align: center;">
+                <h2>Pickle Table Example</h2>
+                
             </div>
-            
-            <div style="height:80vh">
-                <div id="div_table"></div>
+            <div style="height:5vh;text-align: center;" class="div_button">
+                <div class="card header_card">
+                    <h3>Some Events</h3>
+                </div>
+                <div class="card header_card" >
+                    <h3>Callback Log</h3>
+                </div>
+                
             </div>
 
+
+            <div style="height:20vh;text-align: center;" class="div_button">
+                <div class="card form_card">
+                    <div class="form">
+                        <input type="text" id="in_title" placeholder="Title For Row :">
+                        <button type="button" id="btn_add">Add Row</button>
+                    </div>  
+                    <div class="form">
+                        <input type="text" id="in_utitle" placeholder="New Title For Row :">
+                        <button type="button" id="btn_update" >Update Row (id = 1)</button>
+                    </div>  
+                    <div class="form">
+                        <input type="text" id="in_delete" placeholder="Row Id :"> 
+                        <button type="button" id="btn_delete">Delete Row</button>
+                    </div> 
+                </div>
+                <div class="card" >
+                   falan gibi
+                </div>
+            </div>
+            
+            <div style="height:70vh;" class="div_main" >
+                <div class="card" >
+                    <div id="div_table"></div>
+                </div>
+            </div>
         </div>
         <script type="module">
             import PickleTable from './assets/script.js';
@@ -71,7 +102,7 @@
                 pageLimit:10,
                 //row formatting callback
                 rowFormatter:(elm,data)=>{
-                    console.log(elm,data);
+                    //console.log(elm,data);
                     //modify row element
                     //elm.style.backgroundColor = 'yellow';
                     //modify data
@@ -80,10 +111,13 @@
                 },
                 //row click callback
                 rowClick:(elm,data)=>{
-                    console.log(elm,data);
+                    //console.log(elm,data);
                 },
                 afterRender:(currentData,currentPage)=>{
 
+                },
+                pageChanged:(currentData,currentPage)=>{
+                    //console.log(currentData,currentPage);
                 },
                 data:data
             });
@@ -121,34 +155,19 @@
             });*/
 
 
+            
+            
+            
             /**
              * example methods
              */
-            /*setTimeout(() => {
-               
-
-                //clean table data
-                table.clearData();
-
-                //add data to table
-                //to-do
-
-                //get data from table
-                //to-do
-
-
-                //update table data
-                //to-do
-                
-            }, 1000);*/
-            
 
             //test events
             //test add row
             document.getElementById('btn_add').addEventListener('click',()=>{
                 table.addRow({
                     id:(new Date).getTime(),
-                    title:'title falan boyle',
+                    title:document.getElementById('in_title').value.trim(),
                 });
             });
 
@@ -156,13 +175,13 @@
             //test update row
             document.getElementById('btn_update').addEventListener('click',()=>{
                 table.updateRow(1,{
-                    title:'i m updated title => '+(new Date).getTime(),
+                    title:'i m updated title => '+document.getElementById('in_utitle').value.trim(),
                 });
             });
 
-             //test delete row
-             document.getElementById('btn_delete').addEventListener('click',()=>{
-                table.deleteRow(2);
+            //test delete row
+            document.getElementById('btn_delete').addEventListener('click',()=>{
+                table.deleteRow(document.getElementById('in_delete').value.trim());
             });
         </script>
         

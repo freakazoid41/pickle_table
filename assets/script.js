@@ -20,6 +20,7 @@ export default class PickleTable {
             currentData:{}, //table current page data
             //events
             afterRender:null,
+            pageChanged:null,
             rowClick:null,
             rowFormatter:null
         };  
@@ -44,12 +45,19 @@ export default class PickleTable {
      */
     events(){
         //listen page changing
-        this.config.pagination.addEventListener('click',e=>{
+        this.config.pagination.addEventListener('click',async e=>{
             if(e.target.classList.contains('btn_page')){
                 //set page
                 this.config.currentPage = e.target.dataset.page;
                 //set data
-                this.getData();
+                await this.getData();
+
+                //run callback
+                //trigger after render if not null
+                if(this.config.pageChanged !== null) this.config.pageChanged(
+                    this.config.currentData, //current rendered data
+                    this.config.currentPage, //current rendered page
+                );
             }
         });
     }
@@ -61,13 +69,21 @@ export default class PickleTable {
         //at this area wee will building table element
         //get referance
         this.config.referance = document.querySelector(this.config.container);
-        //set class targeter
+        //set class targetter
         this.config.referance.classList.add('pickletable');
+
+        //build loader
+        this.config.loader = document.createElement('div');
+        this.config.loader.classList.add('loader');
+        this.config.referance.appendChild(this.config.loader);
 
         //build headers and table skeleton
         const table = document.createElement('table');
+        table.classList.add('fade-in');
         table.style.width = '100%';
-        
+        //temporary
+        table.style.display = 'none';
+
         const headers = document.createElement('thead');
         const divTable = document.createElement('div');
         divTable.classList.add('divTable');
@@ -96,8 +112,10 @@ export default class PickleTable {
         table.appendChild(headers);
         table.appendChild(this.config.body);
         divTable.appendChild(table);
-        //append table to document
         
+        //give referance to table for loading
+        this.config.tableReferace = table;
+        //append table to document
         this.config.referance.appendChild(divTable);
         //append pagination to document
         this.config.referance.appendChild(this.config.pagination);
@@ -118,6 +136,11 @@ export default class PickleTable {
      * this method will get data from ajax target or container
      */
     async getData(/*order = null,filter = null*/){
+        //start loader
+        this.config.loader.style.display = '';
+        this.config.tableReferace.style.display = 'none';
+
+
         this.config.body.innerHTML = '';
         if(this.config.type === 'local'){
             //get page values
@@ -174,10 +197,13 @@ export default class PickleTable {
         this.calcPagination();
 
         //trigger after render if not null
-        if(this.config.afterRender !== null) this.config.afterRender({
-            currentData:this.config.currentData, //current rendered data
-            currentPage:this.config.currentPage, //current rendered page
-        });
+        if(this.config.afterRender !== null) this.config.afterRender(
+            this.config.currentData, //current rendered data
+            this.config.currentPage //current rendered page
+        );
+        //close loader
+        this.config.loader.style.display = 'none';
+        this.config.tableReferace.style.display = '';
     }
 
     
@@ -307,7 +333,6 @@ export default class PickleTable {
                 const key = this.config.headers[i].key;
                 if(data[key] !== undefined){
                     //get column element
-                    console.log(row)
                     const column = row.columnElms[key];
                     //update element
                     if(this.config.headers[i].columnFormatter !== undefined){

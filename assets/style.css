@@ -1,19 +1,21 @@
-
-.pickletable{
+.pickletable {
     height: 100%;
     overflow: auto;
 }
-.pickletable  table {
+
+.pickletable table {
     font-family: arial, sans-serif;
     border-collapse: collapse;
     border: 1px solid darkgrey;
 }
-.pickletable td, 
+
+.pickletable td,
 .pickletable th {
     border: 1px solid #ddd;
     text-align: left;
     padding: 8px;
 }
+
 .pickletable th {
     position: -webkit-sticky;
     position: sticky;
@@ -34,4 +36,108 @@
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.pickletable tr:hover {
+    background-color: whitesmoke;
+    cursor: pointer;
+}
+
+.pickletable .loader {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 1;
+    width: 150px;
+    height: 150px;
+    margin: -75px 0 0 -75px;
+    border: 16px solid #f3f3f3;
+    border-top: 16px solid greenyellow;
+    border-bottom: 16px solid greenyellow;
+    border-radius: 50%;
+
+    width: 120px;
+    height: 120px;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+
+.pickletable .fade-in {
+    animation: fadeIn ease 2s;
+    -webkit-animation: fadeIn ease 2s;
+    -moz-animation: fadeIn ease 2s;
+    -o-animation: fadeIn ease 2s;
+    -ms-animation: fadeIn ease 2s;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-moz-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-webkit-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-o-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-ms-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
 }
