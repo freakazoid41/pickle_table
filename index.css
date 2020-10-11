@@ -40,3 +40,19 @@ body{
     justify-content: center;
     align-items: center;
 }
+.div_header{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+.git_link{
+    color: black;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+}
+.git_link i{
+    font-size: 30px;
+    margin-right: 5px;
+}
