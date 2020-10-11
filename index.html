@@ -56,6 +56,7 @@
                 </div>
             </div>
         </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous"></script>
         <script type="module">
             import PickleTable from './assets/script.js';
             //set headers
@@ -63,12 +64,31 @@
                 {
                     title:'Id',
                     key:'id',
-                    width:'10%'
+                    width:'10%',
+                    order:true,
+                    orderType:'number', // if column is number then make type number
                 },
                 {
                     title:'Title',
                     key:'title',
-                    width:'100px',
+                    order:true,
+                    orderType:'string', // if column is string then make type string
+                    columnFormatter:(elm,rowData,columnData)=>{
+                        //this method will manuplate column content
+                        //console.log(elm,rowData);
+                        return columnData+'_formattedd..';
+                    },
+                    columnClick:(elm,rowData)=>{
+                        //this method will manuplate column content
+                        //console.log(elm,rowData);
+                        console.log('column clicked..',elm);
+                    },
+                },
+                {
+                    title:'Some Date',
+                    key:'someDate',
+                    order:true,
+                    orderType:'date', // if column is string then make type string
                     columnFormatter:(elm,rowData,columnData)=>{
                         //this method will manuplate column content
                         //console.log(elm,rowData);
@@ -86,11 +106,12 @@
             /**
              * local data example
              */
-            let data = [];
+            /*let data = [];
             for(let i=0;i<35;i++){
                 data.push({
                     id:i+1,
                     title:'title'+i,
+                    someDate:moment().add(i, 'days').add(i, 'hours').format('YYYY-MM-DD H:mm:ss') //format must be like this for data ordering
                 });
             }
 
@@ -120,14 +141,14 @@
                     //console.log(currentData,currentPage);
                 },
                 data:data
-            });
+            });*/
 
 
             /**
              * ajax data example 
              * 
              */
-            /*const table = new PickleTable({
+            const table = new PickleTable({
                 container:'#div_table',
                 headers:headers,
                 type:'ajax',
@@ -152,7 +173,7 @@
                         //order:{},
                     }
                 },
-            });*/
+            });
 
 
             

@@ -102,6 +102,26 @@ export default class PickleTable {
             
             //set header width if entered
             if(this.config.headers[i].width !== undefined) item.style.width = this.config.headers[i].width;
+
+            //add order icon if order is true for column
+            if(this.config.headers[i].order===true){
+                item.classList.add('orderable');
+                item.onclick=()=>{
+                    //set default sort param
+                    if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
+                    //create order element
+                    const obj = {
+                        type:this.config.headers[i].orderType,
+                        style:this.config.headers[i].orderCurrent,
+                        key:this.config.headers[i].key
+                    }
+                    //send order element to data method
+                    this.getData(obj);
+                    //change order param for next event
+                    this.config.headers[i].orderCurrent = this.config.headers[i].orderCurrent == 'asc' ? 'desc' : 'asc';
+                };
+            }
+            
             //add to container
             row.appendChild(item);
         }
@@ -135,7 +155,7 @@ export default class PickleTable {
     /**
      * this method will get data from ajax target or container
      */
-    async getData(/*order = null,filter = null*/){
+    async getData(order = this.currentOrder,/*filter = null*/){
         //start loader
         this.config.loader.style.display = '';
         this.config.tableReferace.style.display = 'none';
@@ -145,7 +165,44 @@ export default class PickleTable {
         if(this.config.type === 'local'){
             //get page values
             let data = [];
-            const list = Object.values(this.config.tableData);
+            let list = Object.values(this.config.tableData);
+
+            //if order is not null
+            if(order !== undefined){
+                this.currentOrder = order;
+                const sortColumn = (a,b) =>{
+                    //there is a 3 type ordering (string - date - number)
+                    
+                    let itemA; // ignore upper and lowercase
+                    let itemB; // ignore upper and lowercase
+                    //decide type
+                    switch(order.type){
+                        default:
+                            itemA = a[order.key].toUpperCase(); // ignore upper and lowercase
+                            itemB = b[order.key].toUpperCase(); // ignore upper and lowercase
+                            break;
+                        case 'number':
+                            itemA = parseFloat(a[order.key]); // make number
+                            itemB = parseFloat(b[order.key]); // make number
+                            break
+                        case 'date':
+                            //make date number then order
+                            //replace emptiness with datetime character
+                            itemA = Date.parse(a[order.key].replace(/T/g, ""));
+                            itemB = Date.parse(b[order.key].replace(/T/g, ""));
+                            break;
+                    }
+
+                    if(order.style === 'asc'){
+                        return itemA < itemB ? -1 : 1;
+                    }else{
+                        return itemA > itemB ? -1 : 1;
+                    }
+                };
+
+                list = list.sort((a, b) => sortColumn(a,b));
+            }
+            console.log(list);
             //if all data is not wanted
             if(String(this.config.pageLimit) !== -1){
                 data = list.slice((this.config.currentPage-1)*this.config.pageLimit , this.config.currentPage*this.config.pageLimit);
@@ -153,7 +210,8 @@ export default class PickleTable {
             }else{
                 data = list;
             }
-           
+
+
             for(let i=0;i<data.length;i++){
                 if(data[i].id === undefined) data[i].id = (new Date).getTime();
                 //set row to table
@@ -170,6 +228,12 @@ export default class PickleTable {
             //set limit filters
             this.config.ajax.data.scale.page  = this.config.currentPage;
             this.config.ajax.data.scale.limit = this.config.pageLimit;
+            //set ordering
+            if(order !== undefined){
+                this.currentOrder = order;
+                this.config.ajax.data.order = order;
+            }
+            //send data request
             await this.request({
                 method:'POST',
                 url:this.config.ajax.url,

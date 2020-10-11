@@ -16,7 +16,8 @@
             for($i=0;$i<95;$i++){
                 array_push($this->data,array(
                     'id'=>$i,
-                    'title'=>"title_$i"
+                    'title'=>"title_$i",
+                    'someDate' => date('Y-m-d H:i', strtotime("today +".$i." days +".$i." hours"))
                 ));
             }
         }
@@ -25,6 +26,28 @@
         function returnData(){
             $lastData = array();
             $pageCount = ceil(count($this->data) / ($this->request['scale']['limit'])); //calculate page count
+            //simulate order
+            if(isset($this->request['order'])){
+                usort($this->data,function($first,$second){
+                    switch($this->request['order']['type']){
+                        default:
+                            $first = strtolower($first[$this->request['order']['key']]);
+                            $second = strtolower($second[$this->request['order']['key']]);
+                            break;
+                        case 'number':
+                            $first = floatval($first[$this->request['order']['key']]);
+                            $second = floatval($second[$this->request['order']['key']]);
+                            break;
+                        case 'date':
+                            $first = new DateTime($first[$this->request['order']['key']]);
+                            $second = new DateTime($second[$this->request['order']['key']]);
+                            break;
+                    }
+                    return $this->request['order']['style'] == 'asc' ? $first > $second : $first < $second;
+                });
+            }
+
+
 
             //simulate limit
             if(isset($this->request['scale'])){
