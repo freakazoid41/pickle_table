@@ -15,6 +15,7 @@
             //simulate data container
             for($i=0;$i<95;$i++){
                 array_push($this->data,array(
+                    'falan'=>$i<50 ? 1 : 0,
                     'id'=>$i,
                     'title'=>"title_$i",
                     'someDate' => date('Y-m-d H:i', strtotime("today +".$i." days +".$i." hours"))
@@ -25,6 +26,32 @@
 
         function returnData(){
             $lastData = array();
+
+            //simulate filter
+            if(isset($this->request['filter']) && count($this->request['filter'])){
+                
+                foreach($this->request['filter'] as $f){
+                    $list = array();
+                    for($i=0;$i<count($this->data);$i++){
+                        if(isset($this->data[$i][$f['key']])){
+                            switch($f['type']){
+                                case 'like':
+                                    //check containing
+                                    if(strpos($this->data[$i][$f['key']],$f['value'])!== false){
+                                        array_push($list,$this->data[$i]);
+                                    }
+                                    break;
+                                case '=':
+                                    if($this->data[$i][$f['key']] == $f['value']) array_push($list,$this->data[$i]);
+                                    break;
+                            }   
+                        }
+                    }
+                    //set to last data
+                    $this->data = $list;
+                }
+            }
+            
             $pageCount = ceil(count($this->data) / ($this->request['scale']['limit'])); //calculate page count
             //simulate order
             if(isset($this->request['order'])){
@@ -46,8 +73,6 @@
                     return $this->request['order']['style'] == 'asc' ? $first > $second : $first < $second;
                 });
             }
-
-
 
             //simulate limit
             if(isset($this->request['scale'])){

@@ -27,7 +27,6 @@
                 <div class="card header_card" >
                     <h3>Callback Log</h3>
                 </div>
-                
             </div>
 
 
@@ -67,13 +66,13 @@
                     key:'id',
                     width:'10%',
                     order:true,
-                    orderType:'number', // if column is number then make type number
+                    type:'number', // if column is number then make type number
                 },
                 {
                     title:'Title',
                     key:'title',
                     order:true,
-                    orderType:'string', // if column is string then make type string
+                    type:'string', // if column is string then make type string
                     columnFormatter:(elm,rowData,columnData)=>{
                         //this method will manuplate column content
                         //console.log(elm,rowData);
@@ -86,10 +85,17 @@
                     },
                 },
                 {
+                    title:'Falan',
+                    key:'falan',
+                    width:'10%',
+                    order:true,
+                    type:'number', // if column is number then make type number
+                },
+                {
                     title:'Some Date',
                     key:'someDate',
                     order:true,
-                    orderType:'date', // if column is string then make type string
+                    type:'date', // if column is string then make type string
                     columnFormatter:(elm,rowData,columnData)=>{
                         //this method will manuplate column content
                         //console.log(elm,rowData);
@@ -107,9 +113,10 @@
             /**
              * local data example
              */
-            /*let data = [];
+            let data = [];
             for(let i=0;i<35;i++){
                 data.push({
+                    falan: i < 20 ? 1 : 0,
                     id:i+1,
                     title:'title'+i,
                     someDate:moment().add(i, 'days').add(i, 'hours').format('YYYY-MM-DD H:mm:ss') //format must be like this for data ordering
@@ -118,7 +125,7 @@
 
 
 
-            const table = new PickleTable({
+            /*const table = new PickleTable({
                 container:'#div_table',
                 headers:headers,
                 pageLimit:10,
@@ -131,6 +138,18 @@
                     data.rowAdded = 'i im added from row';
                     return data;
                 },
+                initialFilter:[
+                    {
+                        key:'someDate',
+                        type:'like',
+                        value:moment().format('YYYY-MM-DD')
+                    },
+                    {
+                        key:'falan',
+                        type:'=',
+                        value:1
+                    }
+                ],
                 //row click callback
                 rowClick:(elm,data)=>{
                     //console.log(elm,data);
@@ -153,6 +172,18 @@
                 container:'#div_table',
                 headers:headers,
                 type:'ajax',
+                initialFilter:[
+                    /*{
+                        key:'someDate',
+                        type:'like',
+                        value:moment().format('YYYY-MM-DD')
+                    },*/
+                    {
+                        key:'falan',
+                        type:'=',
+                        value:1
+                    }
+                ],
                 //row formatting callback
                 rowFormatter:(elm,data)=>{
                     console.log(elm,data);
@@ -170,7 +201,6 @@
                     url:'src/responder.php',
                     pageLimit:20, // put '-1' for getting all data
                     data:{
-                        //filter:{},
                         //order:{},
                     }
                 },

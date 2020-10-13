@@ -12,6 +12,7 @@ export default class PickleTable {
                     order:{},
                 }
             },
+            initialFilter:{},
             pageCount:1, //table page count (will calculating later)
             pageLimit:10, //table page limit
             data:[],//outside data container(temporary data)
@@ -29,6 +30,9 @@ export default class PickleTable {
         for(let key in config){
             if(this.config[key] !== undefined) this.config[key] = config[key];
         }
+
+        //set startup filter if setted
+        if(this.config.initialFilter.length > 0) this.currentFilter = this.config.initialFilter;
 
         //build table
         this.build();
@@ -111,7 +115,7 @@ export default class PickleTable {
                     if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
                     //create order element
                     const obj = {
-                        type:this.config.headers[i].orderType,
+                        type:this.config.headers[i].type,
                         style:this.config.headers[i].orderCurrent,
                         key:this.config.headers[i].key
                     }
@@ -155,7 +159,7 @@ export default class PickleTable {
     /**
      * this method will get data from ajax target or container
      */
-    async getData(order = this.currentOrder,/*filter = null*/){
+    async getData(order = this.currentOrder,filter = this.currentFilter){
         //start loader
         this.config.loader.style.display = '';
         this.config.tableReferace.style.display = 'none';
@@ -202,7 +206,41 @@ export default class PickleTable {
 
                 list = list.sort((a, b) => sortColumn(a,b));
             }
-            console.log(list);
+
+            //if filter is not null
+            if(filter !== undefined){
+                //set coming filter to current filter
+                this.currentFilter = filter;
+                for(let i=0;i<this.currentFilter.length;i++){
+                    let fdata = [];
+                    //filter list and make equal to old one
+                    for(let j=0;j<list.length;j++){
+                        if(list[j][this.currentFilter[i].key]!== undefined){
+                            
+                            switch(this.currentFilter[i].type){
+                                case 'like':
+                                    if(list[j][this.currentFilter[i].key].includes(this.currentFilter[i].value)) fdata.push(list[j]);
+                                    break;
+                                case '=':
+                                    if(list[j][this.currentFilter[i].key] == this.currentFilter[i].value) fdata.push(list[j]);
+                                    break;
+                                case '<':
+                                    if(list[j][this.currentFilter[i].key] < this.currentFilter[i].value) fdata.push(list[j]);
+                                    break;
+                                case '>':
+                                    if(list[j][this.currentFilter[i].key] > this.currentFilter[i].value) fdata.push(list[j]);
+                                    break;
+    
+                            }
+                        }
+                    }
+                    //set to list
+                    list = fdata;
+                }
+            }
+
+
+            
             //if all data is not wanted
             if(String(this.config.pageLimit) !== -1){
                 data = list.slice((this.config.currentPage-1)*this.config.pageLimit , this.config.currentPage*this.config.pageLimit);
@@ -233,6 +271,15 @@ export default class PickleTable {
                 this.currentOrder = order;
                 this.config.ajax.data.order = order;
             }
+
+
+            //if filter is not null
+            if(filter !== undefined){
+                //set coming filter to current filter
+                this.currentFilter = filter;
+                this.config.ajax.data.filter = filter;
+            }
+
             //send data request
             await this.request({
                 method:'POST',
