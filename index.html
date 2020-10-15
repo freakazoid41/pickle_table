@@ -44,9 +44,15 @@
                         <input type="text" id="in_delete" placeholder="Row Id :"> 
                         <button type="button" id="btn_delete">Delete Row</button>
                     </div> 
+                    <div class="form">
+                        <input type="text" id="in_filter" placeholder="Falan Value :"> 
+                        <button type="button" id="btn_filter">Filter Data</button>
+                    </div> 
                 </div>
-                <div class="card" >
-                   falan gibi
+                <div class="card form_card">
+                    
+                        <textarea name="" style="margin: 15px;width: -webkit-fill-available;" id="log_callback" cols="30" rows="10"></textarea>
+                    
                 </div>
             </div>
             
@@ -59,6 +65,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js" integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ==" crossorigin="anonymous"></script>
         <script type="module">
             import PickleTable from './assets/script.js';
+            const in_log = document.getElementById('log_callback');
             //set headers
             const headers = [
                 {
@@ -81,6 +88,7 @@
                     columnClick:(elm,rowData)=>{
                         //this method will manuplate column content
                         //console.log(elm,rowData);
+                        in_log.innerHTML = 'column clicked.. =>'+rowData.id+'\n' + in_log.innerHTML;
                         console.log('column clicked..',elm);
                     },
                 },
@@ -105,7 +113,7 @@
                     columnClick:(elm,rowData)=>{
                         //this method will manuplate column content
                         //console.log(elm,rowData);
-                        console.log('column clicked..',elm);
+                        //console.log('column clicked..',elm);
                     },
                 }
             ]
@@ -152,12 +160,14 @@
                 ],
                 //row click callback
                 rowClick:(elm,data)=>{
+                     in_log.innerHTML = 'row clicked.. =>'+rowData.id+'\n' + in_log.innerHTML;
                     //console.log(elm,data);
                 },
                 afterRender:(currentData,currentPage)=>{
-
+                    in_log.innerHTML = 'table rendered ..\n' + in_log.innerHTML;
                 },
                 pageChanged:(currentData,currentPage)=>{
+                    in_log.innerHTML = 'page changed.. =>'+currentPage+'\n' + in_log.innerHTML;
                     //console.log(currentData,currentPage);
                 },
                 data:data
@@ -178,15 +188,15 @@
                         type:'like',
                         value:moment().format('YYYY-MM-DD')
                     },*/
-                    {
+                    /*{
                         key:'falan',
                         type:'=',
                         value:1
-                    }
+                    }*/
                 ],
                 //row formatting callback
                 rowFormatter:(elm,data)=>{
-                    console.log(elm,data);
+                    //console.log(elm,data);
                     //modify row element
                     //elm.style.backgroundColor = 'yellow';
                     //modify data
@@ -195,7 +205,15 @@
                 },
                 //row click callback
                 rowClick:(elm,data)=>{
+                    in_log.innerHTML = 'row clicked.. =>'+rowData.id+'\n' + in_log.innerHTML;
                     console.log(elm,data);
+                },
+                afterRender:(currentData,currentPage)=>{
+                    in_log.innerHTML = 'table rendered ..\n' + in_log.innerHTML;
+                },
+                pageChanged:(currentData,currentPage)=>{
+                    in_log.innerHTML = 'page changed.. =>'+currentPage+'\n' + in_log.innerHTML;
+                    //console.log(currentData,currentPage);
                 },
                 ajax:{
                     url:'src/responder.php',
@@ -234,6 +252,23 @@
             //test delete row
             document.getElementById('btn_delete').addEventListener('click',()=>{
                 table.deleteRow(document.getElementById('in_delete').value.trim());
+            });
+
+            //test set filter
+            document.getElementById('btn_filter').addEventListener('click',()=>{
+                const elm = document.getElementById('in_filter');
+                if(elm.value.trim() !== ''){
+                    table.setFilter(
+                        [{
+                            key:'falan',
+                            type:'=',
+                            value:document.getElementById('in_filter').value.trim()
+                        }]
+                    );
+                }else{
+                    table.setFilter();
+                }
+                
             });
         </script>
         

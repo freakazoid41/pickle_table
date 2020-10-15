@@ -279,7 +279,6 @@ export default class PickleTable {
                 this.currentFilter = filter;
                 this.config.ajax.data.filter = filter;
             }
-
             //send data request
             await this.request({
                 method:'POST',
@@ -489,6 +488,16 @@ export default class PickleTable {
         }
     }
 
+    /**
+     * this method will set filter after data is loaded
+     * @param {object} data 
+     */
+    setFilter(data = []){
+        //set filter
+        this.currentFilter = data;
+        //get data again
+        this.getData();
+    }
 
 
     /**
