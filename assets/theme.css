@@ -1,13 +1,8 @@
 .pickletable .divPagination button {
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
     background-color: white;
     color: black;
     border: 1px solid darkgrey;
     border-radius: 5px;
-    margin-left: 2px;
 }
 
 .pickletable .divPagination button:hover {
