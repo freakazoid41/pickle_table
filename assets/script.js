@@ -492,11 +492,20 @@ export default class PickleTable {
      * this method will set filter after data is loaded
      * @param {object} data 
      */
-    setFilter(data = []){
+    async setFilter(data = []){
+
+        //check if filter lock is on
+        while(this.config.filterLock === true){
+            await (new Promise(resolve => setTimeout(resolve, 200)));
+        }
+        //lock filter
+        this.config.filterLock = true;
         //set filter
         this.currentFilter = data;
         //get data again
-        this.getData();
+        await this.getData();
+        //unlock filter
+        this.config.filterLock = false;
     }
 
 
