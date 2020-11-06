@@ -194,6 +194,9 @@ table.updateRow(1,{
 //deleting table row with id (in this example row id is  '1')
 table.deleteRow(1);
 
+//get table row from current page with id (in this example row id is  '1')
+table.getRow(1);
+
 //set custom filter for table
 table.setFilter(
    [{
