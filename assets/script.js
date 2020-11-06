@@ -489,6 +489,14 @@ export default class PickleTable {
     }
 
     /**
+     * this method will return row data if exist in current page
+     * @param {integer} rowId 
+     */
+    getRow(rowId){
+        return this.config.currentData['row_'+rowId];
+    }
+    
+    /**
      * this method will set filter after data is loaded
      * @param {object} data 
      */
