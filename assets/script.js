@@ -1,6 +1,7 @@
 export default class PickleTable {
     constructor(config){
         this.config = {
+            filterLock : false,
             referance:null,
             container:'', // target contianer for build
             headers:[], //table headers (object)
@@ -103,7 +104,8 @@ export default class PickleTable {
             //create item
             const item = document.createElement('th');
             item.innerHTML = this.config.headers[i].title;
-            
+            //set header text align
+            if(this.config.headers[i].headAlign !== undefined) item.style.textAlign = this.config.headers[i].headAlign;
             //set header width if entered
             if(this.config.headers[i].width !== undefined) item.style.width = this.config.headers[i].width;
 
@@ -381,6 +383,8 @@ export default class PickleTable {
 
         for(let i = 0;i<this.config.headers.length;i++){
             const column = document.createElement('td');
+            //set header text align
+            if(this.config.headers[i].colAlign !== undefined) column.style.textAlign = this.config.headers[i].colAlign;
             //trigger column formatter if exist
             if(this.config.headers[i].columnFormatter !== undefined){
                 column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
@@ -495,7 +499,8 @@ export default class PickleTable {
     getRow(rowId){
         return this.config.currentData['row_'+rowId];
     }
-    
+
+
     /**
      * this method will set filter after data is loaded
      * @param {object} data 
