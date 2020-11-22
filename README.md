@@ -27,6 +27,8 @@ const headers = [
       key:'id',
       width:'10%',
       order:true,
+      headAlign:'center', //text center will add to column header
+      colAlign:'center',  //text center will add to all columns
       type:'number', // if column is number then make type number
   },
   {
