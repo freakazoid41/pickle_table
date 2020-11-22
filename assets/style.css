@@ -1,3 +1,4 @@
+
 @import url("https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css");
 
 .pickletable {
@@ -11,6 +12,14 @@
     font-family: arial, sans-serif;
     border-collapse: collapse;
     border: 1px solid darkgrey;
+    padding: 0;
+}
+.pickletable table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid darkgrey;
+    padding: 0;
+    table-layout: fixed;
 }
 
 .pickletable td,
@@ -30,8 +39,8 @@
 
 .pickletable .orderable:after{
     content: '\f0dc';
-    font-family: FontAwesome;
-    font-weight: normal;
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900;
     font-style: normal;
     margin:0px 0px 0px 10px;
     text-decoration:none;
@@ -43,6 +52,7 @@
     font-size: 16px;
     margin-left: 2px;
 }
+
 .pickletable .divTable {
     height: 95%;
     overflow: auto;
@@ -157,3 +167,5 @@
         opacity: 1;
     }
 }
+
+
