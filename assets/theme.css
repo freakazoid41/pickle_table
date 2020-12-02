@@ -9,6 +9,10 @@
     background-color: darkgrey;
     color: white;
 }
+.pickletable .divPagination button.current {
+    background-color: darkgrey;
+    color: white;
+}
 
 .pickletable .divPagination button {
     transition-duration: 0.4s;
