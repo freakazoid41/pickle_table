@@ -1,6 +1,7 @@
 export default class PickleTable {
     constructor(config){
         this.config = {
+            filterLock : false,
             referance:null,
             container:'', // target contianer for build
             headers:[], //table headers (object)
@@ -30,6 +31,7 @@ export default class PickleTable {
         for(let key in config){
             if(this.config[key] !== undefined) this.config[key] = config[key];
         }
+
         //set startup filter if setted
         if(this.config.initialFilter.length > 0) this.currentFilter = this.config.initialFilter;
 
@@ -102,7 +104,8 @@ export default class PickleTable {
             //create item
             const item = document.createElement('th');
             item.innerHTML = this.config.headers[i].title;
-            
+            //set header text align
+            if(this.config.headers[i].headAlign !== undefined) item.style.textAlign = this.config.headers[i].headAlign;
             //set header width if entered
             if(this.config.headers[i].width !== undefined) item.style.width = this.config.headers[i].width;
 
@@ -380,6 +383,8 @@ export default class PickleTable {
 
         for(let i = 0;i<this.config.headers.length;i++){
             const column = document.createElement('td');
+            //set header text align
+            if(this.config.headers[i].colAlign !== undefined) column.style.textAlign = this.config.headers[i].colAlign;
             //trigger column formatter if exist
             if(this.config.headers[i].columnFormatter !== undefined){
                 column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
@@ -494,7 +499,8 @@ export default class PickleTable {
     getRow(rowId){
         return this.config.currentData['row_'+rowId];
     }
-    
+
+
     /**
      * this method will set filter after data is loaded
      * @param {object} data 
@@ -520,44 +526,45 @@ export default class PickleTable {
      * this method will calculate pagination
      */
     calcPagination(){
-        let start = 1;
-        let limit = 5;
-        let end = 6;
-        if(this.config.currentPage  > 3){
-            //possible values
-            const possStart = this.config.currentPage - 2;
-            const possEnd = possStart+limit;
-            //end is higher then page count
-            if(possEnd >= this.config.pageCount){
-                start = this.config.pageCount - limit;
-                end = this.config.pageCount;
-            }else{
-                //normal limits
-                start = possStart > 0 ? possStart : 1;
-                //set limit
-                end = possEnd;
+        if(this.config.pageCount > 0){
+            let start = 1;
+            let limit = 5;
+            let end = 6;
+            if(this.config.currentPage  > 3){
+                //possible values
+                const possStart = this.config.currentPage - 2;
+                const possEnd = possStart+limit;
+                //end is higher then page count
+                if(possEnd >= this.config.pageCount){
+                    start = this.config.pageCount - limit;
+                    end = this.config.pageCount;
+                }else{
+                    //normal limits
+                    start = possStart > 0 ? possStart : 1;
+                    //set limit
+                    end = possEnd;
+                }
+                // minus value check
+                start = start > 0 ? start : 1;
             }
-            // minus value check
-            start = start > 0 ? start : 1;
-        }
-        this.config.pagination.innerHTML = '';
-       
-        //start building buttons
-        for(let i=start;i<=end;i++){
-            //create buttons
-            const btn = document.createElement('button');
-            btn.innerHTML = i;
-            btn.type = 'button';
-            btn.dataset.page = i;
-            btn.classList.add('btn_page');
-            //add current tag if current page
-            
-            if(this.config.currentPage == i){
-                btn.classList.add('current');
+            this.config.pagination.innerHTML = '';
+        
+            //start building buttons
+            for(let i=start;i<=end;i++){
+                //create buttons
+                const btn = document.createElement('button');
+                btn.innerHTML = i;
+                btn.type = 'button';
+                btn.dataset.page = i;
+                btn.classList.add('btn_page');
+                //add current tag if current page
+                if(i === this.currentPage){
+                    btn.classList.add('current');
+                }
+                //add button to pagnation div
+                this.config.pagination.appendChild(btn);
+                if(i === this.config.pageCount) break;
             }
-            //add button to pagnation div
-            this.config.pagination.appendChild(btn);
-            if(i === this.config.pageCount) break;
         }
     }
     //#endregion
