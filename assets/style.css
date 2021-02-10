@@ -1,11 +1,14 @@
-
-@import url("https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css");
+@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css';
 
 .pickletable {
     height: 100%;
     overflow: auto;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /*align-items: center;*/
+    justify-content: center;
 }
 
 .pickletable table {
@@ -27,7 +30,7 @@
     border: 1px solid #ddd;
     text-align: left;
     padding: 8px;
-    z-index:1;
+    z-index: 1;
 }
 
 .pickletable th {
@@ -55,14 +58,14 @@
 }
 
 .pickletable .divTable {
-    height: 95%;
+    height: 90%;
     overflow: auto;
     border: 1px solid darkgrey;
     border-radius: 5px;
 }
 
 .pickletable .divPagination {
-    height: 4.5%;
+    margin-top: 5px;
     display: flex;
     justify-content: center;
     align-items: center;
