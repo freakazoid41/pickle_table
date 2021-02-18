@@ -558,7 +558,7 @@ export default class PickleTable {
                 btn.dataset.page = i;
                 btn.classList.add('btn_page');
                 //add current tag if current page
-                if(this.config.currentPage === i){
+                if(i === parseInt(this.config.currentPage)){
                     btn.classList.add('current');
                 }
                 //add button to pagnation div
