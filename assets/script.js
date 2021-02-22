@@ -548,23 +548,16 @@ export default class PickleTable {
                 start = start > 0 ? start : 1;
             }
             this.config.pagination.innerHTML = '';
-        
-            //start building buttons
+            //create buttons
+            //put first button
+            buildBtn(1,'First');
             for(let i=start;i<=end;i++){
-                //create buttons
-                const btn = document.createElement('button');
-                btn.innerHTML = i;
-                btn.type = 'button';
-                btn.dataset.page = i;
-                btn.classList.add('btn_page');
-                //add current tag if current page
-                if(i === parseInt(this.config.currentPage)){
-                    btn.classList.add('current');
-                }
-                //add button to pagnation div
-                this.config.pagination.appendChild(btn);
+               
+                buildBtn(i,i);
                 if(i === this.config.pageCount) break;
             }
+            //put last button
+            buildBtn(this.config.pageCount,'Last');
         }
     }
     //#endregion
