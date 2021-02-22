@@ -549,6 +549,20 @@ export default class PickleTable {
             }
             this.config.pagination.innerHTML = '';
             //create buttons
+            const buildBtn = (count,title) => {
+                //create buttons
+                const btn = document.createElement('button');
+                btn.innerHTML = title;
+                btn.type = 'button';
+                btn.dataset.page = count;
+                btn.classList.add('btn_page');
+                //add current tag if current page
+                if(count === parseInt(this.config.currentPage)){
+                    btn.classList.add('current');
+                }
+                //add button to pagnation div
+                this.config.pagination.appendChild(btn);
+            }
             //put first button
             buildBtn(1,'First');
             for(let i=start;i<=end;i++){
