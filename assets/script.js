@@ -515,6 +515,8 @@ export default class PickleTable {
         this.config.filterLock = true;
         //set filter
         this.currentFilter = data;
+        //set to first page
+        this.config.currentPage = 1;
         //get data again
         await this.getData();
         //unlock filter
