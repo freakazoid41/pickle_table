@@ -465,7 +465,7 @@ export default class PickleTable {
             }
 
             //reformat row
-            this.config.rowFormatter(row,data);
+            this.config.rowFormatter(row.rowElm,data);
             return true;
         }else{
             return false;
