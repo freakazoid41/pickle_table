@@ -457,6 +457,13 @@ export default class PickleTable {
                     this.config.currentData['row_'+rowId][key] = data[key];
                 }
             }
+            //set foreach data
+            for(let key in data){
+                this.config.currentData['row_'+rowId][key] = data[key];
+            }
+
+            //reformat row
+            this.config.rowFormatter(row,data);
             return true;
         }else{
             return false;
