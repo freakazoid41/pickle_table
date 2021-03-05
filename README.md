@@ -122,7 +122,8 @@ const table = new PickleTable({
       in_log.innerHTML = 'page changed.. =>'+currentPage+'\n' + in_log.innerHTML;
       //console.log(currentData,currentPage);
   },
-  data:data
+  type : 'local',
+  data : data
 });
 
 
