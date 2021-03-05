@@ -162,6 +162,7 @@ export default class PickleTable {
      * this method will get data from ajax target or container
      */
     async getData(order = this.currentOrder,filter = this.currentFilter){
+        this.config.filterLock = true;
         //start loader
         this.config.loader.style.display = '';
         this.config.tableReferace.style.display = 'none';
@@ -316,6 +317,7 @@ export default class PickleTable {
         //close loader
         this.config.loader.style.display = 'none';
         this.config.tableReferace.style.display = '';
+        this.config.filterLock = false;
     }
 
     
