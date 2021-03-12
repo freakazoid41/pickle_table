@@ -212,6 +212,9 @@ table.setFilter(
 //resetting filters
 table.setFilter();
 
+//removing all data inside of table
+table.clearData();
+
 ```
 
 ---
