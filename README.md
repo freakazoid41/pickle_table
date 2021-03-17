@@ -88,7 +88,7 @@ for(let i=0;i<35;i++){
 const table = new PickleTable({
   container:'#div_table', //table target div
   headers:headers,
-  pageLimit:10,
+  pageLimit:10, // -1 for closing pagination
   //row formatting callback
   rowFormatter:(elm,data)=>{
       //console.log(elm,data);
