@@ -31,7 +31,6 @@ export default class PickleTable {
         for(let key in config){
             if(this.config[key] !== undefined) this.config[key] = config[key];
         }
-
         //set startup filter if setted
         if(this.config.initialFilter.length > 0) this.currentFilter = this.config.initialFilter;
 
@@ -79,7 +78,7 @@ export default class PickleTable {
 
         //build loader
         this.config.loader = document.createElement('div');
-        this.config.loader.classList.add('loader');
+        this.config.loader.classList.add('ploader');
         this.config.referance.appendChild(this.config.loader);
 
         //build headers and table skeleton
@@ -126,6 +125,10 @@ export default class PickleTable {
                     //change order param for next event
                     this.config.headers[i].orderCurrent = this.config.headers[i].orderCurrent == 'asc' ? 'desc' : 'asc';
                 };
+            }else{
+                if(this.config.headers[i].headClick !== undefined){
+                    item.onclick=()=>this.config.headers[i].headClick();
+                }
             }
             
             //add to container
@@ -166,7 +169,6 @@ export default class PickleTable {
         //start loader
         this.config.loader.style.display = '';
         this.config.tableReferace.style.display = 'none';
-
 
         this.config.body.innerHTML = '';
         if(this.config.type === 'local'){
@@ -243,7 +245,6 @@ export default class PickleTable {
             }
 
 
-            
             //if all data is not wanted
             if(String(this.config.pageLimit) !== -1){
                 data = list.slice((this.config.currentPage-1)*this.config.pageLimit , this.config.currentPage*this.config.pageLimit);
@@ -305,7 +306,6 @@ export default class PickleTable {
                 }
             });
         }
-
         //create pagination
         this.calcPagination();
 
@@ -329,15 +329,19 @@ export default class PickleTable {
     async request(rqs) {
         let fD = new FormData();
 
-        for (let key in rqs['data']) {
-            fD.append(key, rqs['data'][key]);
+        for (let key in rqs.data) {
+            fD.append(key, rqs.data[key]);
         }
 
         const op = {
-            method: rqs['method'],
+            method: rqs.method,
+            mode  : 'cors',
+            credentials: 'include' 
         };
 
-        if (rqs['method'] !== 'GET') {
+        if(this.config.ajax !== undefined && this.config.ajax.headers !== undefined) op.headers = this.config.ajax.headers
+
+        if (rqs.method !== 'GET') {
             op.body = fD;
         }
         return await fetch(rqs['url'], op).then((response) => {
@@ -353,7 +357,7 @@ export default class PickleTable {
         //reset table data 
         this.config.currentData = {};
         this.config.pageCount=1; //table page count (will calculating later)
-        this.config.pageLimit=10; //table page limit
+        //this.config.pageLimit=10; //table page limit
         this.config.tableData={};
         this.config.currentPage=1; //table current page
         this.config.currentData={}; //table current data
@@ -368,7 +372,7 @@ export default class PickleTable {
      * this method will set data from data container or ajax target
      * @param {object} data 
      */
-    addRow(data,outside=true){
+    addRow(data,outside=true,prepend = false){
         data.columnElms = {};
         const row = document.createElement('tr');
         //trigger row formatter if exist
@@ -420,15 +424,18 @@ export default class PickleTable {
             
             //recalculate page count 
             this.config.pageCount = Math.ceil(Object.values(this.config.tableData).length / this.config.pageLimit);
-
+            
             //recalculate pagination if local data
             if(this.config.type === 'local') this.calcPagination();
             //remove last child from current page if the page limit has been exceeded
-            if(this.config.pageLimit <= Object.values(this.config.currentData).length){
+            if(parseInt(this.config.pageLimit) > 0 && this.config.pageLimit <= Object.values(this.config.currentData).length){
                 this.config.referance.querySelector('table tbody tr:last-child').remove();
             }
+        }
+
+        if(prepend) {
             //add out row to top
-            this.config.body.prepend(row)
+            this.config.body.prepend(row);
         }else{
             //append row to body
             this.config.body.append(row);
@@ -452,7 +459,7 @@ export default class PickleTable {
                     const column = row.columnElms[key];
                     //update element
                     if(this.config.headers[i].columnFormatter !== undefined){
-                        column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[key]);
+                        column.innerHTML = this.config.headers[i].columnFormatter(column,row,data[key]);
                     }else{
                         column.innerHTML = data[key];
                     }
@@ -464,8 +471,8 @@ export default class PickleTable {
                 this.config.currentData['row_'+rowId][key] = data[key];
             }
 
-            //reformat row
-            this.config.rowFormatter(row.rowElm,data);
+
+            this.config.rowFormatter(row.rowElm,row);
             return true;
         }else{
             return false;
@@ -529,7 +536,7 @@ export default class PickleTable {
         //get data again
         await this.getData();
         //unlock filter
-        this.config.filterLock = false;
+        //this.config.filterLock = false;
     }
 
 
@@ -559,7 +566,8 @@ export default class PickleTable {
                 start = start > 0 ? start : 1;
             }
             this.config.pagination.innerHTML = '';
-            //create buttons
+        
+            //start building buttons
             const buildBtn = (count,title) => {
                 //create buttons
                 const btn = document.createElement('button');
@@ -575,14 +583,16 @@ export default class PickleTable {
                 this.config.pagination.appendChild(btn);
             }
             //put first button
-            buildBtn(1,'First');
+            buildBtn(1,'İlk');
             for(let i=start;i<=end;i++){
-               
+                //create buttons
                 buildBtn(i,i);
                 if(i === this.config.pageCount) break;
             }
             //put last button
-            buildBtn(this.config.pageCount,'Last');
+            buildBtn(this.config.pageCount,'Son');
+        }else{
+            this.config.pagination.innerHTML = '';
         }
     }
     //#endregion
