@@ -472,7 +472,7 @@ export default class PickleTable {
             }
 
 
-            this.config.rowFormatter(row.rowElm,row);
+            if(this.config.rowFormatter !== null) this.config.rowFormatter(row.rowElm,row);
             return true;
         }else{
             return false;
