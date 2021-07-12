@@ -6,6 +6,7 @@ export default class PickleTable {
             container:'', // target contianer for build
             headers:[], //table headers (object)
             type:'local', //data type local or ajax 
+            paginationType : 'number', //pagination type ('scroll','number')
             ajax:{
                 url:'',
                 data:{
@@ -21,10 +22,11 @@ export default class PickleTable {
             currentPage:1, //table current page
             currentData:{}, //table current page data
             //events
-            afterRender:null,
-            pageChanged:null,
-            rowClick:null,
-            rowFormatter:null
+            afterRender  : null,
+            pageChanged  : null,
+            rowClick     : null,
+            rowFormatter : null,
+            columnSearch : false,
         };  
 
         //set custom table config
@@ -51,19 +53,44 @@ export default class PickleTable {
         //listen page changing
         this.config.pagination.addEventListener('click',async e=>{
             if(e.target.classList.contains('btn_page')){
-                //set page
-                this.config.currentPage = e.target.dataset.page;
-                //set data
-                await this.getData();
-
-                //run callback
-                //trigger after render if not null
-                if(this.config.pageChanged !== null) this.config.pageChanged(
-                    this.config.currentData, //current rendered data
-                    this.config.currentPage, //current rendered page
-                );
+                this.changePage(e.target.dataset.page);
             }
         });
+        
+        //listen scroll pagination
+        if(this.config.paginationType === 'scroll'){
+            this.pageObserver = new IntersectionObserver((entries) => {
+                //console.log(e,elm)
+                if(entries[0]['intersectionRatio'] > 0.5 && entries[0].target.dataset.next === 'waiting') {
+                    entries[0].target.dataset.next = 'loaded';
+                    this.changePage(this.config.currentPage+1);
+                }
+                //console.log('new page coming')
+                // callback code
+            }, { threshold: [0.5] });
+        }
+        
+        //listen column search
+        if(this.config.columnSearch){
+            this.config.referance.addEventListener('change',e=>{
+                if(e.target.classList.contains('search-input')){
+                    const elms = this.config.referance.querySelectorAll('.search-input');
+                    const filter = [];
+                    for(let i=0;i<elms.length;i++){
+                        if(elms[i].value.trim() != ''){
+                            filter.push({
+                                key   : elms[i].name, // column key
+                                type  : 'like', // filtering type ('like','<','>')
+                                value : elms[i].value.trim() //wanted column value
+                            });
+                        }
+                        
+                    }
+                    this.setFilter(filter);
+                }
+                
+            });
+        }
     }
 
     /**
@@ -98,11 +125,12 @@ export default class PickleTable {
         this.config.body = document.createElement('tbody');
         
         //now build headers
-        const row = document.createElement('tr');
+        const row  = document.createElement('tr');
+        const srow = document.createElement('tr');
         for(let i=0;i<this.config.headers.length;i++){
             //create item
             const item = document.createElement('th');
-            item.innerHTML = this.config.headers[i].title;
+            item.innerHTML = '<span>'+this.config.headers[i].title+'</span>';
             //set header text align
             if(this.config.headers[i].headAlign !== undefined) item.style.textAlign = this.config.headers[i].headAlign;
             //set header width if entered
@@ -111,19 +139,21 @@ export default class PickleTable {
             //add order icon if order is true for column
             if(this.config.headers[i].order===true){
                 item.classList.add('orderable');
-                item.onclick=()=>{
-                    //set default sort param
-                    if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
-                    //create order element
-                    const obj = {
-                        type:this.config.headers[i].type,
-                        style:this.config.headers[i].orderCurrent,
-                        key:this.config.headers[i].key
+                item.onclick=(e)=>{
+                    if(!e.target.classList.contains('search-input')){
+                        //set default sort param
+                        if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
+                        //create order element
+                        const obj = {
+                            type:this.config.headers[i].type,
+                            style:this.config.headers[i].orderCurrent,
+                            key:this.config.headers[i].key
+                        }
+                        //send order element to data method
+                        this.getData(obj);
+                        //change order param for next event
+                        this.config.headers[i].orderCurrent = this.config.headers[i].orderCurrent == 'asc' ? 'desc' : 'asc';
                     }
-                    //send order element to data method
-                    this.getData(obj);
-                    //change order param for next event
-                    this.config.headers[i].orderCurrent = this.config.headers[i].orderCurrent == 'asc' ? 'desc' : 'asc';
                 };
             }else{
                 if(this.config.headers[i].headClick !== undefined){
@@ -131,12 +161,33 @@ export default class PickleTable {
                 }
             }
             
+          
+
+
+            //create search input
+            if(this.config.columnSearch && this.config.headers[i].key!=='#'){
+                //const sitem = document.createElement('th');
+                const input = document.createElement('input');
+                
+                input.classList.add('search-input');
+                input.style.width = '100%';
+                input.name = this.config.headers[i].key;
+                //console.log(this.config.headers[i].key)
+                item.appendChild(document.createElement('br'));
+                item.appendChild(input);
+                //srow.appendChild(sitem);
+            }
             //add to container
             row.appendChild(item);
+
         }
         //add headers to table header
         headers.appendChild(row);
-        
+        if(this.config.columnSearch){
+            //search row
+            headers.appendChild(srow);
+        }
+
         //add elements to table
         table.appendChild(headers);
         table.appendChild(this.config.body);
@@ -168,9 +219,13 @@ export default class PickleTable {
         this.config.filterLock = true;
         //start loader
         this.config.loader.style.display = '';
-        this.config.tableReferace.style.display = 'none';
+        const body = this.config.tableReferace.querySelector('tbody');
+        if(this.config.paginationType !== 'scroll'){
+            body.style.display = 'none';
+            this.config.body.innerHTML = '';
+        } 
 
-        this.config.body.innerHTML = '';
+        
         if(this.config.type === 'local'){
             //get page values
             let data = [];
@@ -257,7 +312,7 @@ export default class PickleTable {
             for(let i=0;i<data.length;i++){
                 if(data[i].id === undefined) data[i].id = (new Date).getTime();
                 //set row to table
-                this.addRow(data[i],false);
+                this.addRow(data[i],false,false,i);
             }
         }else{
             //get data via ajax
@@ -301,7 +356,7 @@ export default class PickleTable {
                         //set id if not exist
                         if(rsp.data[i].id===undefined) rsp.data[i].id = (new Date()).getTime()+'_'+i;
                         //add to table
-                        this.addRow(rsp.data[i],false);
+                        this.addRow(rsp.data[i],false,false,i);
                     }
                 }
             });
@@ -316,6 +371,7 @@ export default class PickleTable {
         );
         //close loader
         this.config.loader.style.display = 'none';
+        body.style.display = '';
         this.config.tableReferace.style.display = '';
         this.config.filterLock = false;
     }
@@ -372,7 +428,7 @@ export default class PickleTable {
      * this method will set data from data container or ajax target
      * @param {object} data 
      */
-    addRow(data,outside=true,prepend = false){
+    addRow(data,outside=true,prepend = false,count = 0){
         data.columnElms = {};
         const row = document.createElement('tr');
         //trigger row formatter if exist
@@ -405,6 +461,13 @@ export default class PickleTable {
 
             data.columnElms[this.config.headers[i].key] = column;
         }
+        if(this.config.paginationType === 'scroll' && count === parseInt(this.config.pageLimit-(this.config.pageLimit/3))){
+            //add class for data appending..
+            row.classList.add('page-flag');
+            row.dataset.next = 'waiting';
+            this.pageObserver.observe(row);
+        }
+        
 
         //set elements to data
         data.rowElm = row;
@@ -544,7 +607,8 @@ export default class PickleTable {
      * this method will calculate pagination
      */
     calcPagination(){
-        if(this.config.pageCount > 0){
+        console.log(this.config)
+        if(this.config.pageCount > 0 && this.config.paginationType !== 'scroll'){
             let start = 1;
             let limit = 5;
             let end = 6;
@@ -594,6 +658,24 @@ export default class PickleTable {
         }else{
             this.config.pagination.innerHTML = '';
         }
+    }
+
+    /**
+     * this method will change page
+     * @param {integer} page 
+     */
+    async changePage(page){
+        //set page
+        this.config.currentPage = page;
+        //set data
+        await this.getData();
+
+        //run callback
+        //trigger after render if not null
+        if(this.config.pageChanged !== null) this.config.pageChanged(
+            this.config.currentData, //current rendered data
+            this.config.currentPage, //current rendered page
+        );
     }
     //#endregion
 }
