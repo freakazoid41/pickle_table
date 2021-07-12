@@ -98,6 +98,8 @@ const table = new PickleTable({
       data.rowAdded = 'i im added from row';
       return data;
   },
+  columnSearch : true, // true - false for opening and closig
+  paginationType : 'number',// scroll - number (number for default)
   initialFilter:[
       {
           key:'someDate',
@@ -133,6 +135,8 @@ const table = new PickleTable({
   container:'#div_table',
   headers:headers,
   type:'ajax',
+  columnSearch : true, // true - false for opening and closig
+  paginationType : 'number',// scroll - number (number for default)
   initialFilter:[
       /*{
           key:'someDate',
@@ -166,9 +170,9 @@ const table = new PickleTable({
       in_log.innerHTML = 'page changed.. =>'+currentPage+'\n' + in_log.innerHTML;
       //console.log(currentData,currentPage);
   },
+  pageLimit:20, // put '-1' for getting all data
   ajax:{
       url:'src/responder.php',
-      pageLimit:20, // put '-1' for getting all data
       data:{
           //order:{},
       }
