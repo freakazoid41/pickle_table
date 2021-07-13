@@ -220,9 +220,10 @@ export default class PickleTable {
         //start loader
         this.config.loader.style.display = '';
         const body = this.config.tableReferace.querySelector('tbody');
-        if(this.config.paginationType !== 'scroll'){
+        if(this.config.paginationType !== 'scroll' ||  this.config.isFiltering){
             body.style.display = 'none';
             this.config.body.innerHTML = '';
+            this.config.isFiltering = false;
         } 
 
         
@@ -585,13 +586,14 @@ export default class PickleTable {
      * @param {object} data 
      */
     async setFilter(data = []){
-
         //check if filter lock is on
         while(this.config.filterLock === true){
             await (new Promise(resolve => setTimeout(resolve, 200)));
         }
         //lock filter
         this.config.filterLock = true;
+
+        this.config.isFiltering = true;
         //set filter
         this.currentFilter = data;
         //set to first page
