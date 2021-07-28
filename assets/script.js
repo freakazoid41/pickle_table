@@ -1,466 +1,686 @@
-import Page    from '../../../bin/parents/page.js';
+export default class PickleTable {
+    constructor(config){
+        this.config = {
+            filterLock : false,
+            referance:null,
+            container:'', // target contianer for build
+            headers:[], //table headers (object)
+            type:'local', //data type local or ajax 
+            paginationType : 'number', //pagination type ('scroll','number')
+            ajax:{
+                url:'',
+                data:{
+                    filter:{},
+                    order:{},
+                }
+            },
+            initialFilter:{},
+            pageCount:1, //table page count (will calculating later)
+            pageLimit:10, //table page limit
+            data:[],//outside data container(temporary data)
+            tableData:{},
+            currentPage:1, //table current page
+            currentData:{}, //table current page data
+            //events
+            afterRender  : null,
+            pageChanged  : null,
+            rowClick     : null,
+            rowFormatter : null,
+            columnSearch : false,
+        };  
 
-import Plib from '../../../../services/Plib.js';
-import PickleTable  from '../../../../assets/table/pickletable.js';
-import PickleContext  from '../../../../assets/context/picklecontext.js';
-
-export default class Clients extends Page{
-
-    async render(){
-        this.styles = [
-            'views/pages/'+this.constructor.name+'/page.css?v='+(new Date).getTime(),
-            'assets/table/pickletable.css?v='+(new Date).getTime(),
-            'assets/table/theme.css?v='+(new Date).getTime(),
-            'assets/context/picklecontext.css?v='+(new Date).getTime()
-        ]
-        //render page
-        await this.view(`<section class="main_section fade-in">
-                            
-                                <div class="d-flex flex-column-fluid">
-                                    <div class="container">
-                                        <div class="card card-custom mb-2" id="div_list">
-                                            <div class="card-body ">
-                                                <div class="row">
-                                                    <div class="col-2">
-                                                        <div class="input-icon">
-															<input type="text" name="free" class="form-control elm_filter" placeholder="Serbest Arama">
-															<span>
-																<i class="flaticon2-search-1 icon-md"></i>
-                                                            </span>
-                                                        </div>  
-                                                    </div>
-                                                    <div class="col-2">
-                                                        <select name="ftype" class="form-control elm_filter" id="sel_btype">
-                                                            <option selected value="">Tip Seçiniz</option>
-                                                            <option value="M">Müşteri</option>
-                                                            <option value="T">Tedarikçi</option>
-                                                            <option value="P">Personel</option>
-                                                            <option value="G">Gider Kartı</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-2">
-                                                        <select name="company_structure_id" id="sel_cstype"  class="form-control elm_filter">
-                                                            <option selected value="">Şirket Tip Seçiniz</option>
-                                                            
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-3">
-                                                        <button id="btn_filter" type="button" class="btn btn-danger btn-block">Ara</button>
-                                                    </div>
-                                                    <div class="col-3">
-                                                        <button id="btn_filter_reset" type="button" class="btn btn-warning btn-block">Temizle</button>
-                                                    </div>
-                                                </div>    
-                                            </div>
-                                        </div>
-                                        <div class="card card-custom" id="div_list">
-                                            <div class="card-header flex-wrap justify-content-end border-0 pt-6 pb-0">
-                                                <div class="card-toolbar">
-                                                    <div class="dropdown dropdown-inline mr-2">
-                                                        <button type="button" class="btn btn-secondary font-weight-bolder dropdown-toggle" id="dropdownMenuButton2" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <i class="flaticon-more-1 icon-md"></i>
-                                                            Sütunlar
-                                                        </button>
-                                                        <!--begin::Dropdown Menu-->
-                                                        <div class="dropdown-menu dropdown-menu-sm dropdown-menu-right" aria-labelledby="dropdownMenuButton2">
-                                                            <!--begin::Navigation-->
-                                                            <ul class="navi flex-column navi-hover py-2" id="list_column">
-                                                                <li class="navi-header font-weight-bolder text-uppercase font-size-sm text-primary pb-2">Sütun Seçiniz:</li>
-                                                                
-                                                            </ul>
-                                                            <!--end::Navigation-->
-                                                        </div>
-                                                        <!--end::Dropdown Menu-->
-                                                    </div>
-                                                    <!--begin::Dropdown-->
-                                                    <div class="dropdown dropdown-inline mr-2">
-                                                        <button type="button" class="btn btn-light-primary font-weight-bolder dropdown-toggle" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <i class="flaticon-edit icon-md"></i>
-                                                            Export
-                                                        </button>
-                                                        <!--begin::Dropdown Menu-->
-                                                        <div class="dropdown-menu dropdown-menu-sm dropdown-menu-right" aria-labelledby="dropdownMenuButton1">
-                                                            <!--begin::Navigation-->
-                                                            <ul class="navi flex-column navi-hover py-2">
-                                                                <li class="navi-header font-weight-bolder text-uppercase font-size-sm text-primary pb-2">Çıktı Seçiniz:</li>
-                                                                <li class="navi-item">
-                                                                    <a href="javascript:;" data-type="print" class="navi-link selectable-icon export_item">
-                                                                        <span class="navi-icon">
-                                                                            <i class="la la-print"></i>
-                                                                        </span>
-                                                                        <span class="navi-text">Print</span>
-                                                                    </a>
-                                                                </li>
-                                                                <li class="navi-item">
-                                                                    <a href="javascript:;" data-type="excel" class="navi-link selectable-icon export_item">
-                                                                        <span class="navi-icon">
-                                                                            <i class="la la-file-excel-o"></i>
-                                                                        </span>
-                                                                        <span class="navi-text">Excel</span>
-                                                                    </a>
-                                                                </li>
-                                                                <li class="navi-item">
-                                                                    <a href="javascript:;" data-type="csv" class="navi-link selectable-icon export_item">
-                                                                        <span class="navi-icon">
-                                                                            <i class="la la-file-text-o"></i>
-                                                                        </span>
-                                                                        <span class="navi-text">CSV</span>
-                                                                    </a>
-                                                                </li>
-                                                            </ul>
-                                                            <!--end::Navigation-->
-                                                        </div>
-                                                        <!--end::Dropdown Menu-->
-                                                    </div>
-                                                    <!--end::Dropdown-->
-                                                    <!--begin::Button-->
-                                                    <a href="/#/clients_edit" type="button" class="btn btn-danger font-weight-bolder">
-                                                        <i class="flaticon2-plus"></i> Yeni Cari
-                                                    </a>
-                                                    <!--end::Button-->
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="card-body" style="height:60vh" id="div_table">
-                                                <div class="row">
-                                                    <div class="col-sm-12" style="height: 55vh;">
-                                                        <div id="tbl_clients"></div>
-                                                    </div>
-                                                </div>    
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            
-                        </section>`);
-    }
-
-
-    async afterRender(){
-        await this.build();
-        await this.events();
-        if(this.renderCallback !== null) this.renderCallback(this.referance);
-    }
-
-    async build(){
-        this.container = {};
-        this.plib = new Plib();
-        this.urlParams = JSON.parse(sessionStorage.getItem('params'));
+        //set custom table config
+        for(let key in config){
+            if(this.config[key] !== undefined) this.config[key] = config[key];
+        }
+        //set startup filter if setted
+        if(this.config.initialFilter.length > 0) this.currentFilter = this.config.initialFilter;
 
         //build table
-        this.getClients();
-        this.buildFilters();
+        this.build();
+
+        //start events
+        this.events();
+
+        //set data
+        this.getData();
     }
 
-
-    async events(){
-        //listen table search
-        document.getElementById('btn_filter').addEventListener('click',e=>{
-            const elms = this.plib.checkForm('.elm_filter');
-            const filter = [];
-            for(let key in elms.obj){
-                filter.push({
-                    key:key, // column key
-                    type:'=', // filtering type ('like','<','>')
-                    value:elms.obj[key] //wanted column value
-                });
+    /**
+     * this method will set component events
+     */
+    events(){
+        //listen page changing
+        this.config.pagination.addEventListener('click',async e=>{
+            if(e.target.classList.contains('btn_page')){
+                this.changePage(e.target.dataset.page);
             }
-            if(this.urlParams.type !== undefined){
-                filter.push({
-                    key   : 'ftype',
-                    type  : '=',
-                    value : this.urlParams.type.toUpperCase()
-                });
-            }
-            this.clitable.setFilter(filter);
         });
+        //listen scroll pagination
+        if(this.config.paginationType === 'scroll'){
+            this.pageObserver = new IntersectionObserver((entries) => {
+                //console.log(e,elm)
+                if(entries[0]['intersectionRatio'] > 0.5 && entries[0].target.dataset.next === 'waiting') {
+                    entries[0].target.dataset.next = 'loaded';
+                    this.changePage(this.config.currentPage+1);
+                }
+                //console.log('new page coming')
+                // callback code
+            }, { threshold: [0.5] });
+        }
+        
+        //listen column search
+        if(this.config.columnSearch){
+            this.config.referance.addEventListener('change',e=>{
+                if(e.target.classList.contains('search-input')){
+                    const elms = this.config.referance.querySelectorAll('.search-input');
+                    const filter = [];
+                    for(let i=0;i<elms.length;i++){
+                        if(elms[i].value.trim() != ''){
+                            filter.push({
+                                key   : elms[i].name, // column key
+                                type  : 'like', // filtering type ('like','<','>')
+                                value : elms[i].value.trim() //wanted column value
+                            });
+                        }
+                        
+                    }
+                    this.setFilter(filter);
+                }
+                
+            });
+        }
+    }
 
-        document.getElementById('btn_filter_reset').addEventListener('click',e=>{
-            const elms = this.plib.clearElements('.elm_filter');
-            if(this.urlParams.type !== undefined){
-                this.clitable.setFilter([{
-                    key   : 'ftype',
-                    type  : '=',
-                    value : this.urlParams.type
-                }]);
+    /**
+     * this method will build table
+     */
+    build(){
+        //at this area wee will building table element
+        //get referance
+        this.config.referance = document.querySelector(this.config.container);
+        //set class targetter
+        this.config.referance.classList.add('pickletable');
+
+        //build loader
+        this.config.loader = document.createElement('div');
+        this.config.loader.classList.add('ploader');
+        this.config.referance.appendChild(this.config.loader);
+
+        //build headers and table skeleton
+        const table = document.createElement('table');
+        table.classList.add('fade-in');
+        table.style.width = '100%';
+        //temporary
+        table.style.display = 'none';
+
+        const headers = document.createElement('thead');
+        const divTable = document.createElement('div');
+        divTable.classList.add('divTable');
+       
+        this.config.pagination = document.createElement('div');
+        this.config.pagination.classList.add('divPagination');
+
+        this.config.body = document.createElement('tbody');
+        
+        //now build headers
+        const row  = document.createElement('tr');
+        const srow = document.createElement('tr');
+        for(let i=0;i<this.config.headers.length;i++){
+            //create item
+            const item = document.createElement('th');
+            item.innerHTML = '<span>'+this.config.headers[i].title+'</span>';
+            //set header text align
+            if(this.config.headers[i].headAlign !== undefined) item.style.textAlign = this.config.headers[i].headAlign;
+            //set header width if entered
+            if(this.config.headers[i].width !== undefined) item.style.width = this.config.headers[i].width;
+
+            //add order icon if order is true for column
+            if(this.config.headers[i].order===true){
+                item.classList.add('orderable');
+                item.onclick=(e)=>{
+                    if(!e.target.classList.contains('search-input')){
+                        //set default sort param
+                        if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
+                        //create order element
+                        const obj = {
+                            type:this.config.headers[i].type,
+                            style:this.config.headers[i].orderCurrent,
+                            key:this.config.headers[i].key
+                        }
+                        
+                        this.config.isOrdering = true;
+
+                        //send order element to data method
+                        this.getData(obj);
+                        //change order param for next event
+                        this.config.headers[i].orderCurrent = this.config.headers[i].orderCurrent == 'asc' ? 'desc' : 'asc';
+                    }
+                };
             }else{
-                this.clitable.setFilter();
+                if(this.config.headers[i].headClick !== undefined){
+                    item.onclick=()=>this.config.headers[i].headClick();
+                }
             }
             
-        });
+          
 
-        //listen export options
-        document.querySelectorAll('.export_item').forEach(el=>{
-            el.addEventListener('click',e=>{
-                Swal.fire({
-                    title: 'Çıktı Hazırlanıyor ...',
-                    allowOutsideClick: () => !Swal.isLoading(),
-                    onOpen:()=>Swal.showLoading()
-                });
-                const elms = this.plib.checkForm('.elm_filter');
-                const filter = [];
-                for(let key in elms.obj){
-                    filter.push({
-                        key:key, // column key
-                        type:'=', // filtering type ('like','<','>')
-                        value:elms.obj[key] //wanted column value
-                    });
+
+            //create search input
+            if(this.config.columnSearch && this.config.headers[i].key!=='#'){
+                //const sitem = document.createElement('th');
+                const input = document.createElement('input');
+                
+                input.classList.add('search-input');
+                input.style.width = '100%';
+                input.name = this.config.headers[i].key;
+                //console.log(this.config.headers[i].key)
+                item.appendChild(document.createElement('br'));
+                item.appendChild(input);
+                //srow.appendChild(sitem);
+            }
+            //add to container
+            row.appendChild(item);
+
+        }
+        //add headers to table header
+        headers.appendChild(row);
+        if(this.config.columnSearch){
+            //search row
+            headers.appendChild(srow);
+        }
+
+        //add elements to table
+        table.appendChild(headers);
+        table.appendChild(this.config.body);
+        divTable.appendChild(table);
+        
+        //give referance to table for loading
+        this.config.tableReferace = table;
+        //append table to document
+        this.config.referance.appendChild(divTable);
+        //append pagination to document
+        this.config.referance.appendChild(this.config.pagination);
+
+        //reshape data if local
+        if(this.config.type === 'local'){
+            //index data
+            for(let i=0;i<this.config.data.length;i++){
+                if(this.config.data[i].id === undefined)this.config.data[i].id = (new Date()).getTime()+'_'+i;
+                this.config.tableData['row_'+this.config.data[i].id] = this.config.data[i];
+            }
+            //remove data load
+            this.config.data = [];
+        }
+    }
+
+    /**
+     * this method will get data from ajax target or container
+     */
+    async getData(order = this.currentOrder,filter = this.currentFilter){
+        this.config.filterLock = true;
+        //start loader
+        this.config.loader.style.display = '';
+        const body = this.config.tableReferace.querySelector('tbody');
+        if(this.config.paginationType !== 'scroll' ||  this.config.isFiltering || this.config.isOrdering){
+            body.style.display = 'none';
+            this.config.body.innerHTML = '';
+            this.config.isFiltering = false;
+            this.config.isOrdering = false;
+
+        } 
+
+        
+        if(this.config.type === 'local'){
+            //get page values
+            let data = [];
+            let list = Object.values(this.config.tableData);
+
+            //if order is not null
+            if(order !== undefined){
+                //this.currentOrder = order;
+                const sortColumn = (a,b) =>{
+                    //there is a 3 type ordering (string - date - number)
+                    
+                    let itemA; // ignore upper and lowercase
+                    let itemB; // ignore upper and lowercase
+                    //decide type
+                    switch(order.type){
+                        default:
+                            itemA = a[order.key].toUpperCase(); // ignore upper and lowercase
+                            itemB = b[order.key].toUpperCase(); // ignore upper and lowercase
+                            break;
+                        case 'number':
+                            itemA = parseFloat(a[order.key]); // make number
+                            itemB = parseFloat(b[order.key]); // make number
+                            break
+                        case 'date':
+                            //make date number then order
+                            //replace emptiness with datetime character
+                            itemA = Date.parse(a[order.key].replace(/T/g, ""));
+                            itemB = Date.parse(b[order.key].replace(/T/g, ""));
+                            break;
+                    }
+
+                    if(order.style === 'asc'){
+                        return itemA < itemB ? -1 : 1;
+                    }else{
+                        return itemA > itemB ? -1 : 1;
+                    }
+                };
+
+                list = list.sort((a, b) => sortColumn(a,b));
+            }
+
+            //if filter is not null
+            if(filter !== undefined){
+                //set coming filter to current filter
+                this.currentFilter = filter;
+                for(let i=0;i<this.currentFilter.length;i++){
+                    let fdata = [];
+                    //filter list and make equal to old one
+                    for(let j=0;j<list.length;j++){
+                        if(list[j][this.currentFilter[i].key]!== undefined){
+                            
+                            switch(this.currentFilter[i].type){
+                                case 'like':
+                                    if(list[j][this.currentFilter[i].key].includes(this.currentFilter[i].value)) fdata.push(list[j]);
+                                    break;
+                                case '=':
+                                    if(list[j][this.currentFilter[i].key] == this.currentFilter[i].value) fdata.push(list[j]);
+                                    break;
+                                case '<':
+                                    if(list[j][this.currentFilter[i].key] < this.currentFilter[i].value) fdata.push(list[j]);
+                                    break;
+                                case '>':
+                                    if(list[j][this.currentFilter[i].key] > this.currentFilter[i].value) fdata.push(list[j]);
+                                    break;
+    
+                            }
+                        }
+                    }
+                    //set to list
+                    list = fdata;
                 }
-                this.plib.request({
-                    method:'POST',
-                    url: '/table/clients',
-                    data:{
-                        tableReq : JSON.stringify({
-                            filters : filter
-                        })
+            }
+
+
+            //if all data is not wanted
+            if(String(this.config.pageLimit) !== -1){
+                data = list.slice((this.config.currentPage-1)*this.config.pageLimit , this.config.currentPage*this.config.pageLimit);
+                if(data.length!==0)this.config.pageCount = Math.ceil(list.length / this.config.pageLimit);
+            }else{
+                data = list;
+            }
+
+
+            for(let i=0;i<data.length;i++){
+                if(data[i].id === undefined) data[i].id = (new Date).getTime();
+                //set row to table
+                this.addRow(data[i],false,false,i);
+            }
+        }else{
+            //get data via ajax
+            if(this.config.ajax.data.scale === undefined){
+                this.config.ajax.data.scale = {
+                    limit:10,
+                    page:1
+                };
+            }
+            //set limit filters
+            this.config.ajax.data.scale.page  = this.config.currentPage;
+            this.config.ajax.data.scale.limit = this.config.pageLimit;
+            //set ordering
+            if(order !== undefined){
+                this.currentOrder = order;
+                this.config.ajax.data.order = order;
+            }
+
+
+            //if filter is not null
+            if(filter !== undefined){
+                //set coming filter to current filter
+                this.currentFilter = filter;
+                this.config.ajax.data.filter = filter;
+            }
+            //send data request
+            await this.request({
+                method:'POST',
+                url:this.config.ajax.url,
+                data:{
+                    tableReq:JSON.stringify(this.config.ajax.data)
+                }
+            }).then(rsp=>{
+                //clean current data
+                this.config.currentData = {};
+                //set page count and current data
+                if(rsp.pageCount !== undefined) this.config.pageCount = rsp.pageCount;
+                //set data
+                if(rsp.data !== undefined && rsp.data.length > 0){
+                    for(let i=0;i<parseInt(rsp.filteredCount);i++){
+                        //set id if not exist
+                        if(rsp.data[i].id===undefined) rsp.data[i].id = (new Date()).getTime()+'_'+i;
+                        //add to table
+                        this.addRow(rsp.data[i],false,false,i);
                     }
-                }).then(rsp => {
-                    const data = [];
-                    const l = rsp.data.length
-                    for(let i=0;i<l;i++){
-                        const row = [];
-                        //set headers
-                        if(i == 0){
-                            data.push(Object.keys(rsp.data[i]));
-                        }
-                        //set values
-                        for(let key in rsp.data[i]){
-                            row.push(rsp.data[i][key]);
-                        }
-                        data.push(row);
-                    }
-                    this.plib.exportData(e.target.dataset.type,data);
-                    Swal.close();
-                });
-            })
+                }
+            });
+        }
+        //create pagination
+        this.calcPagination();
+
+        //trigger after render if not null
+        if(this.config.afterRender !== null) this.config.afterRender(
+            this.config.currentData, //current rendered data
+            this.config.currentPage //current rendered page
+        );
+        //close loader
+        this.config.loader.style.display = 'none';
+        body.style.display = '';
+        this.config.tableReferace.style.display = '';
+        this.config.filterLock = false;
+    }
+
+    
+    //#region helpers
+    /**
+     * system request method
+     * @param {json object} rqs 
+     */
+    async request(rqs) {
+        let fD = new FormData();
+
+        for (let key in rqs.data) {
+            fD.append(key, rqs.data[key]);
+        }
+
+        const op = {
+            method: rqs.method,
+            mode  : 'cors',
+            credentials: 'include' 
+        };
+
+        if(this.config.ajax !== undefined && this.config.ajax.headers !== undefined) op.headers = this.config.ajax.headers
+
+        if (rqs.method !== 'GET') {
+            op.body = fD;
+        }
+        return await fetch(rqs['url'], op).then((response) => {
+            //convert to json
+            return response.json();
         });
     }
 
     /**
-     * this method will get categories from api
+     * this method clear all data on table 
      */
-    async getClients(){
-        this.current = 0;
-        this.headers = [{
-            title:'Kod',
-            key:'c_code',
-            width:'10%',
-            order:true,
-            headAlign:'center',
-            type:'string', // if column is number then make type number
-        },{
-            title:'Başlık',
-            key:'title',
-            order:true,
-            headAlign:'center',
-            type:'string', // if column is number then make type number
-        },{
-            title:'Tip',
-            key:'ftype',
-            width:'7%',
-            order:true,
-            colAlign:'center',
-            headAlign:'center',
-            type:'string', // if column is number then make type number
-        },{
-            title:'Şirket Türü',
-            key:'company_type',
-            colAlign:'center',
-            order:true,
-            headAlign:'center',
-            type:'string', // if column is number then make type number
-        },{
-            title:'P.Birim',
-            key:'cur',
-            width:'10%',
-            order:true,
-            colAlign:'center',
-            headAlign:'center',
-            type:'string', // if column is number then make type number
-        },{
-            title:'Fiyat',
-            key:'list_price',
-            width:'10%',
-            colAlign:'center',
-            headAlign:'center',
-            order:true,
-            type:'string', // if column is number then make type number
-        },{
-            title:'#',
-            key:'#',
-            width:'10%',
-            headAlign:'center',
-            colAlign:'center',
-            columnFormatter:(elm,rowData,columnData)=>{
-                elm.classList.add('btn_client_options');
-                elm.dataset.id = rowData.id;
-                elm.dataset.title = rowData.title;
-                return '<i  class="flaticon2-list" style="pointer-events:none;"></i>';
-            },
-        },]
-        const options = {
-            container:'#tbl_clients',
-            headers:this.headers,
-            type:'ajax',
-            pageLimit:50,
-            columnSearch : true,
-            paginationType : 'scroll',// scroll - number
-            ajax:{
-                url: '/src/passage.php?url=/table/clients',
-                data:{
-                    //order:{},
-                }
-            },
+    clearData(){
+        //reset table data 
+        this.config.currentData = {};
+        this.config.pageCount=1; //table page count (will calculating later)
+        //this.config.pageLimit=10; //table page limit
+        this.config.tableData={};
+        this.config.currentPage=1; //table current page
+        this.config.currentData={}; //table current data
+
+        //clean body
+        this.config.body.innerHTML = '';
+        //clean pagination
+        this.config.pagination.innerHTML = '';
+    }
+
+    /**
+     * this method will set data from data container or ajax target
+     * @param {object} data 
+     */
+    addRow(data,outside=true,prepend = false,count = 0){
+        data.columnElms = {};
+        const row = document.createElement('tr');
+        //trigger row formatter if exist
+        if(this.config.rowFormatter !== null){
+            const modifiedData = this.config.rowFormatter(row,data);
+            //if new data returned set to row data
+            if(modifiedData !== undefined) data = modifiedData;
+        }
+
+        //set row click if setted
+        if(this.config.rowClick !== null){
+            row.onclick = () => this.config.rowClick(row,data);
+        }
+
+        for(let i = 0;i<this.config.headers.length;i++){
+            const column = document.createElement('td');
+            //set header text align
+            if(this.config.headers[i].colAlign !== undefined) column.style.textAlign = this.config.headers[i].colAlign;
+            //trigger column formatter if exist
+            if(this.config.headers[i].columnFormatter !== undefined){
+                column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
+            }else{
+                column.innerHTML = data[this.config.headers[i].key];
+            }
+            row.appendChild(column);
+            //set columnt click if exist
+            if(this.config.headers[i].columnClick !== undefined){
+                column.onclick = () => this.config.headers[i].columnClick(column,data,data[this.config.headers[i].key]);
+            }
+
+            data.columnElms[this.config.headers[i].key] = column;
+        }
+        if(this.config.paginationType === 'scroll' && count === parseInt(this.config.pageLimit-(this.config.pageLimit/3))){
+            //add class for data appending..
+            row.classList.add('page-flag');
+            row.dataset.next = 'waiting';
+            this.pageObserver.observe(row);
         }
         
-        
-        //get list type
-        if(this.urlParams.type !== undefined){
-            options.initialFilter = [
-                {
-                    key   : 'ftype',
-                    type  : '=',
-                    value : this.urlParams.type.toUpperCase()
-                }
-            ];
+
+        //set elements to data
+        data.rowElm = row;
+
+        //set data to container
+        this.config.currentData['row_'+data.id] = data;
+
+        //id added from outside calculate new page count value
+        if(outside){
+            //add to table data
+            const tempObj = {}
+            tempObj['row_'+data.id] = data;
+            this.config.tableData = {
+                ...tempObj,
+                ...this.config.tableData
+            };
+            
+            //recalculate page count 
+            this.config.pageCount = Math.ceil(Object.values(this.config.tableData).length / this.config.pageLimit);
+            
+            //recalculate pagination if local data
+            if(this.config.type === 'local') this.calcPagination();
+            //remove last child from current page if the page limit has been exceeded
+            if(parseInt(this.config.pageLimit) > 0 && this.config.pageLimit <= Object.values(this.config.currentData).length){
+                this.config.referance.querySelector('table tbody tr:last-child').remove();
+            }
         }
 
-
-
-        this.clitable = new PickleTable(options);
-
-        //table menu
-        const context = new PickleContext({
-            //target
-            c_target: 'btn_client_options',
-            //nodes
-            c_nodes: [/*{
-                icon: 'flaticon-list-3',
-                title: 'Hareketler',
-                //context button click event
-                onClick: (node) => {
-                    sessionStorage.setItem('trans_id',node.dataset.id);
-                    sessionStorage.setItem('trans_type',1);
-                    sessionStorage.setItem('trans_title',node.dataset.title);
-                    window.location.href = '/#/transactions';
-                }
-            },*/{
-                icon: 'flaticon-edit',
-                title: 'Düzenle',
-                //context button click event
-                onClick: (node) => {
-                    sessionStorage.setItem('edit',node.dataset.id);
-                    window.location.href = '/#/clients_edit';
-                }
-            },{
-                icon: 'flaticon2-cross',
-                title: 'Sil',
-                //context button click event
-                onClick: (node) => {
-                    this.plib.setLoader('#div_table');
-                    this.plib.request({
-                        method:'DELETE',
-                        url: '/request/clients/'+node.dataset.id,
-                    }).then(rsp => {
-                        if(rsp.success){
-                            this.clitable.deleteRow(node.dataset.id);
-                        }
-                        this.plib.toast(
-                            rsp.success ? 'success' : 'error',
-                            rsp.success ? 'Girdiler Kaydedildi' : 'Hata Oldu !'
-                        );
-                        this.plib.setLoader('#div_table',false);
-                    });
-                }
-            }]
-        });
-
-        //set column list
-        const list = document.getElementById('list_column');
-
-        for(let i=0;i<this.headers.length;i++){
-            list.innerHTML  += `<li class="navi-item">
-                                    <a href="javascript:;" class="navi-link selectable-icon hide_column" data-status="1" data-child="${i+1}">
-                                        <span class="navi-icon">
-                                            <i class="flaticon2-check-mark"></i>
-                                        </span>
-                                        <span class="navi-text">${this.headers[i].title}</span>
-                                    </a>
-                                </li>`;
+        if(prepend) {
+            //add out row to top
+            this.config.body.prepend(row);
+        }else{
+            //append row to body
+            this.config.body.append(row);
         }
+    }
 
-        //listen column hide show event
-        document.getElementById('list_column').addEventListener('click',e=>{
-            e.preventDefault();
-            if(e.target.classList.contains('hide_column')){
-                const elms = document.querySelectorAll('.divTable tr > *:nth-child('+e.target.dataset.child+')');
-                if(e.target.dataset.status == '0'){
-                    //remove rule
-                    e.target.dataset.status = 1;
-                    e.target.querySelector('i').setAttribute('class','flaticon2-check-mark');
-                    e.target.parentNode.classList.remove('invalid-border');
+    /**
+     * this method will update table row with formatter callback
+     * @param {int} rowId 
+     * @param {object} data 
+     */
+    updateRow(rowId,data = null){
+        const row = this.config.currentData['row_'+rowId];
+        if(row !== undefined){
+            //foreach header
+            for(let i = 0;i<this.config.headers.length;i++){
+                //column key
+                const key = this.config.headers[i].key;
+                if(data[key] !== undefined){
+                    //get column element
+                    const column = row.columnElms[key];
+                    //update element
+                    if(this.config.headers[i].columnFormatter !== undefined){
+                        column.innerHTML = this.config.headers[i].columnFormatter(column,row,data[key]);
+                    }else{
+                        column.innerHTML = data[key];
+                    }
+                    this.config.currentData['row_'+rowId][key] = data[key];
+                }
+            }
+            //set foreach data
+            for(let key in data){
+                this.config.currentData['row_'+rowId][key] = data[key];
+            }
+
+
+            if(this.config.rowFormatter !== null) this.config.rowFormatter(row.rowElm,row);
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * this method will delete table row 
+     * @param {int} rowId 
+     */
+    deleteRow(rowId){
+        if(this.config.currentData['row_'+rowId] !== undefined){
+            //remove element
+            this.config.currentData['row_'+rowId].rowElm.remove();
+            //delete item from stack
+            delete this.config.currentData['row_'+rowId];
+            //recalculate page count if local data
+            if(this.config.type === 'local'){
+                const list = Object.values(this.config.tableData);
+                //if all data is not wanted
+                this.config.pageCount = list.length!==0 ? Math.ceil(list.length / this.config.pageLimit) : 1;
+                //recalculate pagination
+                this.calcPagination();
+                //get an item from another page to this page 
+                const data = list.slice(this.config.currentPage*this.config.pageLimit , (this.config.currentPage+1)*this.config.pageLimit);
+
+                //add next page item to this page
+                if(data.length > 0)this.addRow(data[0],false);
+            }
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    /**
+     * this method will return row data if exist in current page
+     * @param {integer} rowId 
+     */
+    getRow(rowId){
+        return this.config.currentData['row_'+rowId];
+    }
+
+
+    /**
+     * this method will set filter after data is loaded
+     * @param {object} data 
+     */
+    async setFilter(data = []){
+        //check if filter lock is on
+        while(this.config.filterLock === true){
+            await (new Promise(resolve => setTimeout(resolve, 200)));
+        }
+        //lock filter
+        this.config.filterLock = true;
+        this.config.isFiltering = true;
+        //set filter
+        this.currentFilter = data;
+        //set to first page
+        this.config.currentPage = 1;
+        //get data again
+        await this.getData();
+        //unlock filter
+        //this.config.filterLock = false;
+    }
+
+
+    /**
+     * this method will calculate pagination
+     */
+    calcPagination(){
+        console.log(this.config)
+        if(this.config.pageCount > 0 && this.config.paginationType !== 'scroll'){
+            let start = 1;
+            let limit = 5;
+            let end = 6;
+            if(this.config.currentPage  > 3){
+                //possible values
+                const possStart = this.config.currentPage - 2;
+                const possEnd = possStart+limit;
+                //end is higher then page count
+                if(possEnd >= this.config.pageCount){
+                    start = this.config.pageCount - limit;
+                    end = this.config.pageCount;
                 }else{
-                    //add rule
-                    e.target.parentNode.classList.add('invalid-border');
-                    e.target.querySelector('i').setAttribute('class','flaticon2-cross');
-                    e.target.dataset.status = 0;
+                    //normal limits
+                    start = possStart > 0 ? possStart : 1;
+                    //set limit
+                    end = possEnd;
                 }
-                for(let i=0;i<elms.length;i++){
-                    elms[i].style.display = parseInt(e.target.dataset.status) == 1 ? '' : 'none';
-                }
+                // minus value check
+                start = start > 0 ? start : 1;
             }
-        });
-    }
-
-
-    async buildFilters(){
-        //get company types
-        await this.plib.request({
-            method:'POST',
-            url: '/query/sys_options',
-            data:{
-                tab_title : 'clients',
-                col_title : 'company_structure_id'
-            }
-        }).then(rsp => {
-            if(rsp.success){
-                const sel = document.getElementById('sel_cstype');
-                for(let i=0;i<rsp.data.length;i++){
-                    const op = document.createElement('option');
-                    op.text = rsp.data[i].title;
-                    op.value = rsp.data[i].id;
-                    sel.appendChild(op);
-                }
-            }
-        });
-
-        if(this.urlParams.type !== undefined){
-            document.querySelector('.elm_filter[name="ftype"]').value = this.urlParams.type.toUpperCase();
-        }
-
-
-        //get client types
-
+            this.config.pagination.innerHTML = '';
         
-
-
-        /*await this.plib.request({
-            method:'POST',
-            url: '/query/sys_options',
-            data:{
-                tab_title : 'banks'
-            }
-        }).then(rsp => {
-            if(rsp.success){
-                const sel = document.getElementById('sel_btype');
-                for(let i=0;i<rsp.data.length;i++){
-                    const op = document.createElement('option');
-                    op.text = rsp.data[i].title;
-                    op.value = rsp.data[i].id;
-                    sel.appendChild(op);
+            //start building buttons
+            const buildBtn = (count,title) => {
+                //create buttons
+                const btn = document.createElement('button');
+                btn.innerHTML = title;
+                btn.type = 'button';
+                btn.dataset.page = count;
+                btn.classList.add('btn_page');
+                //add current tag if current page
+                if(count === parseInt(this.config.currentPage)){
+                    btn.classList.add('current');
                 }
+                //add button to pagnation div
+                this.config.pagination.appendChild(btn);
             }
-        });*/
+            //put first button
+            buildBtn(1,'İlk');
+            for(let i=start;i<=end;i++){
+                //create buttons
+                buildBtn(i,i);
+                if(i === this.config.pageCount) break;
+            }
+            //put last button
+            buildBtn(this.config.pageCount,'Son');
+        }else{
+            this.config.pagination.innerHTML = '';
+        }
     }
-}
 
+    /**
+     * this method will change page
+     * @param {integer} page 
+     */
+    async changePage(page){
+        //set page
+        this.config.currentPage = page;
+        //set data
+        await this.getData();
+
+        //run callback
+        //trigger after render if not null
+        if(this.config.pageChanged !== null) this.config.pageChanged(
+            this.config.currentData, //current rendered data
+            this.config.currentPage, //current rendered page
+        );
+    }
+    //#endregion
+}
