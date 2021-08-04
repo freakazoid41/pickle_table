@@ -130,6 +130,7 @@ export default class PickleTable {
             //create item
             const item = document.createElement('th');
             item.innerHTML = '<span>'+this.config.headers[i].title+'</span>';
+            item.dataset.key = this.config.headers[i].key;
             //set header text align
             if(this.config.headers[i].headAlign !== undefined) item.style.textAlign = this.config.headers[i].headAlign;
             //set header width if entered
@@ -227,15 +228,12 @@ export default class PickleTable {
             this.config.body.innerHTML = '';
             this.config.isFiltering = false;
             this.config.isOrdering = false;
-
         } 
 
-        
         if(this.config.type === 'local'){
             //get page values
             let data = [];
             let list = Object.values(this.config.tableData);
-
             //if order is not null
             if(order !== undefined){
                 //this.currentOrder = order;
@@ -458,6 +456,11 @@ export default class PickleTable {
             }else{
                 column.innerHTML = data[this.config.headers[i].key];
             }
+
+            const isVisible = !(document.querySelector('th[data-key="'+this.config.headers[i].key+'"]').style.display === 'none');
+            //check if header is visible
+            if(!isVisible) column.style.display = 'none';
+            
             row.appendChild(column);
             //set columnt click if exist
             if(this.config.headers[i].columnClick !== undefined){
@@ -466,7 +469,7 @@ export default class PickleTable {
 
             data.columnElms[this.config.headers[i].key] = column;
         }
-        if(this.config.paginationType === 'scroll' && count === parseInt(this.config.pageLimit-(this.config.pageLimit/3))){
+        if(parseInt(this.config.pageLimit) !== -1 && this.config.paginationType === 'scroll' && count === parseInt(this.config.pageLimit-(this.config.pageLimit/3))){
             //add class for data appending..
             row.classList.add('page-flag');
             row.dataset.next = 'waiting';
@@ -612,7 +615,6 @@ export default class PickleTable {
      * this method will calculate pagination
      */
     calcPagination(){
-        console.log(this.config)
         if(this.config.pageCount > 0 && this.config.paginationType !== 'scroll'){
             let start = 1;
             let limit = 5;
