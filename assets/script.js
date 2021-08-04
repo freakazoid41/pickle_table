@@ -282,7 +282,7 @@ export default class PickleTable {
                             
                             switch(this.currentFilter[i].type){
                                 case 'like':
-                                    if(list[j][this.currentFilter[i].key].includes(this.currentFilter[i].value)) fdata.push(list[j]);
+                                    if(String(list[j][this.currentFilter[i].key]).includes(this.currentFilter[i].value))fdata.push(list[j]);
                                     break;
                                 case '=':
                                     if(list[j][this.currentFilter[i].key] == this.currentFilter[i].value) fdata.push(list[j]);
@@ -304,13 +304,12 @@ export default class PickleTable {
 
 
             //if all data is not wanted
-            if(String(this.config.pageLimit) !== -1){
+            if(parseInt(this.config.pageLimit) !== -1){
                 data = list.slice((this.config.currentPage-1)*this.config.pageLimit , this.config.currentPage*this.config.pageLimit);
                 if(data.length!==0)this.config.pageCount = Math.ceil(list.length / this.config.pageLimit);
             }else{
                 data = list;
             }
-
 
             for(let i=0;i<data.length;i++){
                 if(data[i].id === undefined) data[i].id = (new Date).getTime();
