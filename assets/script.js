@@ -274,24 +274,22 @@ export default class PickleTable {
             if(filter !== undefined){
                 //set coming filter to current filter
                 this.currentFilter = filter;
-                for(let i=0;i<this.currentFilter.length;i++){
-                    let fdata = [];
+                const value = this.currentFilter[i].value;
                     //filter list and make equal to old one
                     for(let j=0;j<list.length;j++){
                         if(list[j][this.currentFilter[i].key]!== undefined){
-                            
                             switch(this.currentFilter[i].type){
                                 case 'like':
-                                    if(String(list[j][this.currentFilter[i].key]).includes(this.currentFilter[i].value))fdata.push(list[j]);
+                                    if(String(list[j][this.currentFilter[i].key]).toUpperCase().includes(value.toUpperCase()))fdata.push(list[j]);
                                     break;
                                 case '=':
-                                    if(list[j][this.currentFilter[i].key] == this.currentFilter[i].value) fdata.push(list[j]);
+                                    if(list[j][this.currentFilter[i].key] == value) fdata.push(list[j]);
                                     break;
                                 case '<':
-                                    if(list[j][this.currentFilter[i].key] < this.currentFilter[i].value) fdata.push(list[j]);
+                                    if(list[j][this.currentFilter[i].key] < value) fdata.push(list[j]);
                                     break;
                                 case '>':
-                                    if(list[j][this.currentFilter[i].key] > this.currentFilter[i].value) fdata.push(list[j]);
+                                    if(list[j][this.currentFilter[i].key] > value) fdata.push(list[j]);
                                     break;
     
                             }
