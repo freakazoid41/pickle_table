@@ -141,6 +141,9 @@ export default class PickleTable {
                 item.classList.add('orderable');
                 item.onclick=(e)=>{
                     if(!e.target.classList.contains('search-input')){
+                        if(this.config.paginationType === 'scroll'){
+                            this.config.currentPage = 1;
+                        }
                         //set default sort param
                         if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
                         //create order element
