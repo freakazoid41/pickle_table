@@ -14,7 +14,7 @@ export default class PickleTable {
                     order:{},
                 }
             },
-            initialFilter:{},
+            initialFilter:[],
             pageCount:1, //table page count (will calculating later)
             pageLimit:10, //table page limit
             data:[],//outside data container(temporary data)
@@ -67,28 +67,6 @@ export default class PickleTable {
                 //console.log('new page coming')
                 // callback code
             }, { threshold: [0.5] });
-        }
-        
-        //listen column search
-        if(this.config.columnSearch){
-            this.config.referance.addEventListener('change',e=>{
-                if(e.target.classList.contains('search-input')){
-                    const elms = this.config.referance.querySelectorAll('.search-input');
-                    const filter = [];
-                    for(let i=0;i<elms.length;i++){
-                        if(elms[i].value.trim() != ''){
-                            filter.push({
-                                key   : elms[i].name, // column key
-                                type  : 'like', // filtering type ('like','<','>')
-                                value : elms[i].value.trim() //wanted column value
-                            });
-                        }
-                        
-                    }
-                    this.setFilter(filter);
-                }
-                
-            });
         }
     }
 
@@ -178,6 +156,30 @@ export default class PickleTable {
                 input.classList.add('search-input');
                 input.style.width = '100%';
                 input.name = this.config.headers[i].key;
+
+                input.onchange = () => {
+                    const elms = this.config.referance.querySelectorAll('.search-input');
+                    const filter = [];
+                    for(let i=0;i<elms.length;i++){
+                        if(elms[i].value.trim() != ''){
+                            filter.push({
+                                key   : elms[i].name, // column key
+                                type  : 'like', // filtering type ('like','<','>')
+                                value : elms[i].value.trim() //wanted column value
+                            });
+                        }
+                        
+                    }
+                    //add initial filter to search
+                    if(this.config.initialFilter.length > 0){
+                        for(let i=0;i<this.config.initialFilter.length;i++){
+                            filter.push(this.config.initialFilter[i]);
+                        }
+                    }
+                    this.setFilter(filter);
+                };
+
+
                 //console.log(this.config.headers[i].key)
                 item.appendChild(document.createElement('br'));
                 item.appendChild(input);
@@ -277,7 +279,9 @@ export default class PickleTable {
             if(filter !== undefined){
                 //set coming filter to current filter
                 this.currentFilter = filter;
-                const value = this.currentFilter[i].value;
+                for(let i=0;i<this.currentFilter.length;i++){
+                    let fdata = [];
+                    const value = this.currentFilter[i].value;
                     //filter list and make equal to old one
                     for(let j=0;j<list.length;j++){
                         if(list[j][this.currentFilter[i].key]!== undefined){
