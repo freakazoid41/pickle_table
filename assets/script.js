@@ -1,6 +1,6 @@
 //Pickle tree component created by Kadir Barış Bozat
 
-export default class PickleTree {
+class PickleTree {
   /**
    *
    * @param {object} obj as tree object
