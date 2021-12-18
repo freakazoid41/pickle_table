@@ -1,692 +1,933 @@
-export default class PickleTable {
-    constructor(config){
-        this.config = {
-            filterLock : false,
-            referance:null,
-            container:'', // target contianer for build
-            headers:[], //table headers (object)
-            type:'local', //data type local or ajax 
-            paginationType : 'number', //pagination type ('scroll','number')
-            ajax:{
-                url:'',
-                data:{
-                    filter:{},
-                    order:{},
-                }
-            },
-            initialFilter:[],
-            pageCount:1, //table page count (will calculating later)
-            pageLimit:10, //table page limit
-            data:[],//outside data container(temporary data)
-            tableData:{},
-            currentPage:1, //table current page
-            currentData:{}, //table current page data
-            //events
-            afterRender  : null,
-            pageChanged  : null,
-            rowClick     : null,
-            rowFormatter : null,
-            columnSearch : false,
-        };  
+//Pickle tree component created by Kadir Barış Bozat
 
-        //set custom table config
-        for(let key in config){
-            if(this.config[key] !== undefined) this.config[key] = config[key];
+export default class PickleTree {
+  /**
+   *
+   * @param {object} obj as tree object
+   */
+  constructor(obj) {
+    //target div id
+    this.target = obj.c_target;
+    //building area
+    this.area = "";
+    //available nodes list
+    this.nodeList = {};
+    //row create callback
+    this.rowCreateCallback = obj.rowCreateCallback;
+    //draw callback
+    this.drawCallback = obj.drawCallback;
+    //switch callback
+    this.switchCallback = obj.switchCallback;
+    //drag callback
+    this.dragCallback = obj.dragCallback;
+    //drop callback
+    this.dropCallback = obj.dropCallback;
+    //order callback
+    this.orderCallback = obj.orderCallback;
+    //node removed callback
+    this.nodeRemove = obj.nodeRemoveCallback;
+    //tree json data
+    this.data = obj.c_data;
+    //build tree
+    this.build(obj.c_config);
+    //start events
+    this.staticEvents();
+  }
+
+  /**
+   * this method will contains static events for tree
+   */
+  staticEvents() {
+    //close menu
+    this.main_container.addEventListener("click", (e) => {
+      let elm = e.target;
+      //close all first
+      document.querySelectorAll(".ptreemenuCont").forEach((menu) => {
+        menu.outerHTML = "";
+      });
+      if (elm.classList.contains("menuIcon")) {
+        //menu toggle event for node
+        setTimeout(() => {
+          this.getMenu(e.target, this.getNode(elm.id.split("node_")[1]));
+        }, 10);
+      }
+    });
+
+    //drag - drop events
+    if (this.config.drag) {
+      this.invalid_area = {
+        container: null,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      };
+
+      //drag start
+      this.main_container.addEventListener("dragstart", async (e) => {
+        //give border to container
+        //container
+        this.invalid_area.container = document.getElementById(this.target + "node_" + e.target.id.split("node_")[1]);
+        this.invalid_area.top = this.invalid_area.container.getBoundingClientRect().top;
+        this.invalid_area.left = this.invalid_area.container.getBoundingClientRect().left;
+        this.invalid_area.right = this.invalid_area.left + this.invalid_area.container.offsetWidth;
+        this.invalid_area.bottom = this.invalid_area.top + this.invalid_area.container.offsetHeight;
+        setTimeout(() => {
+          this.invalid_area.container.classList.add("valid");
+          this._lock();
+        }, 300);
+        //drag callback
+        if (this.dragCallback) {
+          this.dragCallback(this.nodeList[parseInt(e.target.id.split("node_")[1])]);
         }
-        //set startup filter if setted
-        if(this.config.initialFilter.length > 0) this.currentFilter = this.config.initialFilter;
+      });
 
-        //build table
-        this.build();
+      //draging
+      this.main_container.addEventListener("drag", (e) => {
+        //console.log('drag happenign');
+      });
+      //drag end
+      this.main_container.addEventListener("dragend", async (e) => {
+        //console.log('drag end')
+        //remove border to container
+        this.invalid_area.container.classList.remove("invalid");
+        this.invalid_area.container.classList.remove("valid");
+        //make all elements pointer clean
+        this._lock(false);
 
-        //start events
-        this.events();
+        //clear old targets
+        this.clearDebris();
+        //get node
+        const node = this.nodeList[parseInt(e.target.id.split("node_")[1])];
+        //check is valid
+        if (!this.invalid_area.valid) {
+          node.parent = { id: 0 };
+        } else {
+          //set old parent for cleaning
+          node.old_parent = node.parent;
+          const drop = this.getNode(this.drag_target);
+          if (this.drag_target === parseInt(e.target.id.split("node_")[1]) || this.drag_target === undefined || drop === undefined || drop.parent.value === node.value) {
+            //this means it dragged to outside
+            node.parent = { id: 0 };
+          } else {
+            node.parent = drop;
+          }
+        }
 
-        //set data
-        this.getData();
+        node.updateNode();
+
+        //drop callback
+        if (this.dropCallback) {
+          this.dropCallback(node);
+        }
+      });
+      //drag location
+      this.main_container.addEventListener("dragenter", (e) => {
+        //console.log('drag enter')
+        this.clearDebris();
+        try {
+          //check position is valid
+          let target = {
+            left: e.target.getBoundingClientRect().left,
+            top: e.target.getBoundingClientRect().top,
+          };
+
+          if (target.top > this.invalid_area.top && target.top < this.invalid_area.bottom && target.left > this.invalid_area.left && target.left < this.invalid_area.right) {
+            this.invalid_area.valid = false;
+            this.invalid_area.container.classList.add("invalid");
+            this.invalid_area.container.classList.remove("valid");
+          } else {
+            this.invalid_area.valid = true;
+            this.invalid_area.container.classList.remove("invalid");
+            this.invalid_area.container.classList.add("valid");
+          }
+
+          if (e.target.classList) {
+            if (e.target.classList.contains("drop_target")) {
+              e.target.classList.add("drag_triggered");
+              //this is for updating node parent to current
+              this.drag_target = parseInt(e.target.id.split("node_")[1]);
+            }
+          }
+        } catch (e) {
+          //console.log('dragging have exception..');
+          this.drag_target = undefined;
+        }
+      });
     }
+  }
 
-    /**
-     * this method will set component events
-     */
-    events(){
-        //listen page changing
-        this.config.pagination.addEventListener('click',async e=>{
-            if(e.target.classList.contains('btn_page')){
-                this.changePage(e.target.dataset.page);
-            }
-        });
-        //listen scroll pagination
-        if(this.config.paginationType === 'scroll'){
-            this.pageObserver = new IntersectionObserver((entries) => {
-                //console.log(e,elm)
-                if(entries[0]['intersectionRatio'] > 0.5 && entries[0].target.dataset.next === 'waiting') {
-                    entries[0].target.dataset.next = 'loaded';
-                    this.changePage(this.config.currentPage+1);
-                }
-                //console.log('new page coming')
-                // callback code
-            }, { threshold: [0.5] });
-        }
+  //#region Helper Methods
+  /**
+   *
+   */
+  async destroy() {
+    //remove all menus
+    document.querySelectorAll(".ptreemenuCont").forEach((menu) => {
+      menu.outerHTML = "";
+    });
+    //remove all items
+    document.getElementById(this.target).innerHTML = "";
+  }
+
+  /**
+   * this method will lock elements when dragging
+   */
+  async _lock(type = true) {
+    const elms = document.querySelectorAll(".drop_target");
+    for (let i = 0; i < elms.length; i++) {
+      if (type) {
+        elms[i].classList.add("disabled");
+      } else {
+        elms[i].classList.remove("disabled");
+      }
     }
+  }
 
-    /**
-     * this method will build table
-     */
-    build(){
-        //at this area wee will building table element
-        //get referance
-        this.config.referance = document.querySelector(this.config.container);
-        //set class targetter
-        this.config.referance.classList.add('pickletable');
-
-        //build loader
-        this.config.loader = document.createElement('div');
-        this.config.loader.classList.add('ploader');
-        this.config.referance.appendChild(this.config.loader);
-
-        //build headers and table skeleton
-        const table = document.createElement('table');
-        table.classList.add('fade-in');
-        table.style.width = '100%';
-        //temporary
-        table.style.display = 'none';
-
-        const headers = document.createElement('thead');
-        const divTable = document.createElement('div');
-        divTable.classList.add('divTable');
-       
-        this.config.pagination = document.createElement('div');
-        this.config.pagination.classList.add('divPagination');
-
-        this.config.body = document.createElement('tbody');
-        
-        //now build headers
-        const row  = document.createElement('tr');
-        const srow = document.createElement('tr');
-        for(let i=0;i<this.config.headers.length;i++){
-            //create item
-            const item = document.createElement('th');
-            item.innerHTML = '<span>'+this.config.headers[i].title+'</span>';
-            item.dataset.key = this.config.headers[i].key;
-            //set header text align
-            if(this.config.headers[i].headAlign !== undefined) item.style.textAlign = this.config.headers[i].headAlign;
-            //set header width if entered
-            if(this.config.headers[i].width !== undefined) item.style.width = this.config.headers[i].width;
-
-            //add order icon if order is true for column
-            if(this.config.headers[i].order===true){
-                item.classList.add('orderable');
-                item.onclick=(e)=>{
-                    if(!e.target.classList.contains('search-input')){
-                        if(this.config.paginationType === 'scroll'){
-                            this.config.currentPage = 1;
-                        }
-                        //set default sort param
-                        if(this.config.headers[i].orderCurrent === undefined) this.config.headers[i].orderCurrent = 'desc';
-                        //create order element
-                        const obj = {
-                            type:this.config.headers[i].type,
-                            style:this.config.headers[i].orderCurrent,
-                            key:this.config.headers[i].key
-                        }
-                        
-                        this.config.isOrdering = true;
-
-                        //send order element to data method
-                        this.getData(obj);
-                        //change order param for next event
-                        this.config.headers[i].orderCurrent = this.config.headers[i].orderCurrent == 'asc' ? 'desc' : 'asc';
-                    }
-                };
-            }else{
-                if(this.config.headers[i].headClick !== undefined){
-                    item.onclick=()=>this.config.headers[i].headClick();
-                }
-            }
-            
-          
-
-
-            //create search input
-            if(this.config.columnSearch && this.config.headers[i].key!=='#'){
-                //const sitem = document.createElement('th');
-                const input = document.createElement('input');
-                
-                input.classList.add('search-input');
-                input.style.width = '100%';
-                input.name = this.config.headers[i].key;
-
-                input.onchange = () => {
-                    const elms = this.config.referance.querySelectorAll('.search-input');
-                    const filter = [];
-                    for(let i=0;i<elms.length;i++){
-                        if(elms[i].value.trim() != ''){
-                            filter.push({
-                                key   : elms[i].name, // column key
-                                type  : 'like', // filtering type ('like','<','>')
-                                value : elms[i].value.trim() //wanted column value
-                            });
-                        }
-                        
-                    }
-                    //add initial filter to search
-                    if(this.config.initialFilter.length > 0){
-                        for(let i=0;i<this.config.initialFilter.length;i++){
-                            filter.push(this.config.initialFilter[i]);
-                        }
-                    }
-                    this.setFilter(filter);
-                };
-
-
-                //console.log(this.config.headers[i].key)
-                item.appendChild(document.createElement('br'));
-                item.appendChild(input);
-                //srow.appendChild(sitem);
-            }
-            //add to container
-            row.appendChild(item);
-
-        }
-        //add headers to table header
-        headers.appendChild(row);
-        if(this.config.columnSearch){
-            //search row
-            headers.appendChild(srow);
-        }
-
-        //add elements to table
-        table.appendChild(headers);
-        table.appendChild(this.config.body);
-        divTable.appendChild(table);
-        
-        //give referance to table for loading
-        this.config.tableReferace = table;
-        //append table to document
-        this.config.referance.appendChild(divTable);
-        //append pagination to document
-        this.config.referance.appendChild(this.config.pagination);
-
-        //reshape data if local
-        if(this.config.type === 'local'){
-            //index data
-            for(let i=0;i<this.config.data.length;i++){
-                if(this.config.data[i].id === undefined)this.config.data[i].id = (new Date()).getTime()+'_'+i;
-                this.config.tableData['row_'+this.config.data[i].id] = this.config.data[i];
-            }
-            //remove data load
-            this.config.data = [];
-        }
+  /**
+   *
+   * @param {string} message for log messages
+   */
+  log(message) {
+    if (this.config.logMode) {
+      console.log(message);
     }
+  }
 
-    /**
-     * this method will get data from ajax target or container
-     */
-    async getData(order = this.currentOrder,filter = this.currentFilter){
-        this.config.filterLock = true;
-        //start loader
-        this.config.loader.style.display = '';
-        const body = this.config.tableReferace.querySelector('tbody');
-        if(this.config.paginationType !== 'scroll' ||  this.config.isFiltering || this.config.isOrdering){
-            body.style.display = 'none';
-            this.config.body.innerHTML = '';
-            this.config.isFiltering = false;
-            this.config.isOrdering = false;
-        } 
-
-        if(this.config.type === 'local'){
-            //get page values
-            let data = [];
-            let list = Object.values(this.config.tableData);
-            //if order is not null
-            if(order !== undefined){
-                //this.currentOrder = order;
-                const sortColumn = (a,b) =>{
-                    //there is a 3 type ordering (string - date - number)
-                    
-                    let itemA; // ignore upper and lowercase
-                    let itemB; // ignore upper and lowercase
-                    //decide type
-                    switch(order.type){
-                        default:
-                            itemA = a[order.key].toUpperCase(); // ignore upper and lowercase
-                            itemB = b[order.key].toUpperCase(); // ignore upper and lowercase
-                            break;
-                        case 'number':
-                            itemA = parseFloat(a[order.key]); // make number
-                            itemB = parseFloat(b[order.key]); // make number
-                            break
-                        case 'date':
-                            //make date number then order
-                            //replace emptiness with datetime character
-                            itemA = Date.parse(a[order.key].replace(/T/g, ""));
-                            itemB = Date.parse(b[order.key].replace(/T/g, ""));
-                            break;
-                    }
-
-                    if(order.style === 'asc'){
-                        return itemA < itemB ? -1 : 1;
-                    }else{
-                        return itemA > itemB ? -1 : 1;
-                    }
-                };
-
-                list = list.sort((a, b) => sortColumn(a,b));
-            }
-
-            //if filter is not null
-            if(filter !== undefined){
-                //set coming filter to current filter
-                this.currentFilter = filter;
-                for(let i=0;i<this.currentFilter.length;i++){
-                    let fdata = [];
-                    const value = this.currentFilter[i].value;
-                    //filter list and make equal to old one
-                    for(let j=0;j<list.length;j++){
-                        if(list[j][this.currentFilter[i].key]!== undefined){
-                            switch(this.currentFilter[i].type){
-                                case 'like':
-                                    if(String(list[j][this.currentFilter[i].key]).toUpperCase().includes(value.toUpperCase()))fdata.push(list[j]);
-                                    break;
-                                case '=':
-                                    if(list[j][this.currentFilter[i].key] == value) fdata.push(list[j]);
-                                    break;
-                                case '<':
-                                    if(list[j][this.currentFilter[i].key] < value) fdata.push(list[j]);
-                                    break;
-                                case '>':
-                                    if(list[j][this.currentFilter[i].key] > value) fdata.push(list[j]);
-                                    break;
-    
-                            }
-                        }
-                    }
-                    //set to list
-                    list = fdata;
-                }
-            }
-
-
-            //if all data is not wanted
-            if(parseInt(this.config.pageLimit) !== -1){
-                data = list.slice((this.config.currentPage-1)*this.config.pageLimit , this.config.currentPage*this.config.pageLimit);
-                if(data.length!==0)this.config.pageCount = Math.ceil(list.length / this.config.pageLimit);
-            }else{
-                data = list;
-            }
-
-            for(let i=0;i<data.length;i++){
-                if(data[i].id === undefined) data[i].id = (new Date).getTime();
-                //set row to table
-                this.addRow(data[i],false,false,i);
-            }
-        }else{
-            //get data via ajax
-            if(this.config.ajax.data.scale === undefined){
-                this.config.ajax.data.scale = {
-                    limit:10,
-                    page:1
-                };
-            }
-            //set limit filters
-            this.config.ajax.data.scale.page  = this.config.currentPage;
-            this.config.ajax.data.scale.limit = this.config.pageLimit;
-            //set ordering
-            if(order !== undefined){
-                this.currentOrder = order;
-                this.config.ajax.data.order = order;
-            }
-
-
-            //if filter is not null
-            if(filter !== undefined){
-                //set coming filter to current filter
-                this.currentFilter = filter;
-                this.config.ajax.data.filter = filter;
-            }
-            //send data request
-            await this.request({
-                method:'POST',
-                url:this.config.ajax.url,
-                data:{
-                    tableReq:JSON.stringify(this.config.ajax.data)
-                }
-            }).then(rsp=>{
-                //clean current data
-                this.config.currentData = {};
-                //set page count and current data
-                if(rsp.pageCount !== undefined) this.config.pageCount = rsp.pageCount;
-                //set data
-                if(rsp.data !== undefined && rsp.data.length > 0){
-                    for(let i=0;i<parseInt(rsp.filteredCount);i++){
-                        //set id if not exist
-                        if(rsp.data[i].id===undefined) rsp.data[i].id = (new Date()).getTime()+'_'+i;
-                        //add to table
-                        this.addRow(rsp.data[i],false,false,i);
-                    }
-                }
-            });
-        }
-        //create pagination
-        this.calcPagination();
-
-        //trigger after render if not null
-        if(this.config.afterRender !== null) this.config.afterRender(
-            this.config.currentData, //current rendered data
-            this.config.currentPage //current rendered page
-        );
-        //close loader
-        this.config.loader.style.display = 'none';
-        body.style.display = '';
-        this.config.tableReferace.style.display = '';
-        this.config.filterLock = false;
+  /**
+   * Building main details
+   */
+  build(c_config) {
+    //set default config
+    this.config = {
+      key: new Date().getTime(),
+      //logs are open or close
+      logMode: false,
+      //switch mode
+      switchMode: false,
+      //family mode
+      //for child
+      autoChild: true,
+      //for parent
+      autoParent: true,
+      //fold icon
+      foldedIcon: "fa fa-plus",
+      //unfold icon
+      unFoldedIcon: "fa fa-minus",
+      //menu icon
+      menuIcon: ["fa", "fa-list-ul"],
+      //start status is collapsed or not
+      foldedStatus: false,
+      //drag
+      drag: false,
+      //order
+      order: false,
+    };
+    //check config here!!
+    for (let key in this.config) {
+      if (c_config[key] !== undefined) {
+        this.config[key] = c_config[key];
+      }
     }
+    //check if key is exist somewhere in document
+    if (document.getElementById(this.config.key + "_div_pickletree") !== null) {
+      this.config.key = new Date().getTime() + 10;
+    }
+    //referance for some events
+    this.main_container = document.getElementById(this.target);
+    this.main_container.classList.add('ptree');
+    this.main_container.innerHTML = '<div id="' + this.config.key + '_div_pickletree"><ul id="' + this.config.key + '_tree_picklemain"></ul></div>';
+    //console.log(this.main_container.getElementById(this.config.key+'_tree_picklemain'));
 
-    
-    //#region helpers
-    /**
-     * system request method
-     * @param {json object} rqs 
-     */
-    async request(rqs) {
-        let fD = new FormData();
+    this.area = document.getElementById(this.config.key + "_tree_picklemain");
+    this.log("tree build started..");
+    this.drawData();
+  }
 
-        for (let key in rqs.data) {
-            fD.append(key, rqs.data[key]);
+  /**
+   *
+   * @param {integer} id node id for finding node
+   */
+  getNode(id) {
+    this.log("node returned..");
+    //return node
+    return this.nodeList[id];
+  }
+
+  /**
+   * set child nodes for parent node
+   * @param {object} node
+   */
+  setChildNodes(node) {
+    //update node parent
+    for (let key in this.nodeList) {
+      if (this.nodeList[key].id === node.parent.id) {
+        this.nodeList[key].childs.push(node.id);
+        //show icon for childs
+        document.getElementById("i_" + this.nodeList[key].id).style.display = "";
+      }
+    }
+  }
+
+  /**
+   * this method will return switched nodes
+   */
+  getSelected() {
+    let nodes = [];
+    //get all checked nodes
+    for (let key in this.nodeList) {
+      if (this.nodeList[key].checkStatus) nodes.push(this.nodeList[key]);
+    }
+    return nodes;
+  }
+
+  /**
+   * this method will reset switched nodes
+   */
+  resetSelected() {
+    //get all checked nodes
+    for (let key in this.nodeList) {
+      if (this.nodeList[key].checkStatus) {
+        this.nodeList[key].checkStatus = false;
+        this.checkNode(this.nodeList[key]);
+      }
+    }
+    return true;
+  }
+  //#endregion
+
+  //#region drag - drop events helpers
+  /**
+   * this method will clean entered areas after drag events
+   */
+  clearDebris() {
+    //first clean all entered areas
+    let elms = document.querySelectorAll(".drag_triggered");
+    for (let i = 0; i < elms.length; i++) {
+      elms[i].classList.remove("drag_triggered");
+    }
+  }
+
+  //#endregion
+
+  //#region Node Events
+  /**
+   * this method will order element
+   * @param {event} e
+   */
+  orderNode(e) {
+    const isBefore = e.target.dataset.target == 1;
+    const main = e.target.parentNode.parentNode.parentNode;
+    const target = isBefore ? main.previousElementSibling : main.nextElementSibling;
+    //get nodes
+    if (target !== null) {
+      //replace data
+      const targetNode = this.getNode(target.id.split("_treenode_")[1]);
+      const mainNode = this.getNode(main.id.split("_treenode_")[1]);
+
+      const currentOrder = mainNode.order;
+      const targetOrder = targetNode.order === mainNode.order ? (isBefore ? targetNode.order - 1 : targetNode.order + 1) : targetNode.order;
+      //change order data
+      targetNode.order = currentOrder;
+      mainNode.order = targetOrder;
+
+      //replace element
+      main.parentNode.replaceChild(main, target);
+      main.parentNode.insertBefore(target, isBefore ? main.nextSibling : main);
+    }
+    if (typeof this.orderCallback == "function") this.config.orderCallback(main, target);
+  }
+  /**
+   * get child nodes list of node
+   * @param {object} node
+   */
+  getChilds(node) {
+    let list = [];
+    for (let key in this.nodeList) {
+      if (node.childs.includes(this.nodeList[key].id)) {
+        list.push(this.nodeList[key]);
+      }
+    }
+    this.log("node childs returned..");
+    return list;
+  }
+
+  /**
+   * toggle open or close node childs
+   * @param {object} node
+   */
+  toggleNode(node) {
+    if (node.childs.length > 0) {
+      let ie = document.getElementById("i_" + node.id);
+      let ule = document.getElementById("c_" + node.id);
+      if (node.foldedStatus === false) {
+        //change icon
+        ie.classList.remove("fa-minus");
+        ie.classList.add("fa-plus");
+        //hide element
+        //ule.style.display = "none";
+        ule.classList.remove("active");
+        ule.classList.add("not-active");
+      } else {
+        //change icon
+        ie.classList.remove("fa-plus");
+        ie.classList.add("fa-minus");
+        //show element
+        //ule.style.display = "";
+        ule.classList.remove("not-active");
+        ule.classList.add("active");
+      }
+      node.foldedStatus = !node.foldedStatus;
+      //change node status
+      for (let key in this.nodeList) {
+        if (this.nodeList[key].id === node.id) {
+          this.nodeList[key].foldedStatus = node.foldedStatus;
         }
+      }
+      this.log("node toggled..");
+    } else {
+      this.log("node not has childs...!");
+    }
+  }
 
-        const op = {
-            method: rqs.method,
-            mode  : 'cors',
-            credentials: 'include' 
+  /**
+   * remove node from dom
+   * @param {object} node
+   */
+  deleteNode(node) {
+    //remove node from old parent's child data !!!!
+
+    let elm = document.getElementById(node.id);
+    let childs = node.getChilds();
+    if (childs.length > 0) {
+      for (let i = 0; i < childs.length; i++) {
+        this.deleteNode(childs[i]);
+      }
+    }
+    if (elm !== null) elm.parentNode.removeChild(elm);
+    this.log("node removed..(" + node.id + ")");
+    if (this.nodeRemove !== undefined) this.nodeRemove(node);
+  }
+
+  /**
+   * this method will check node and its family.
+   * @param {object} node
+   */
+  checkNode(node) {
+    //console.log(node);
+    //then if is checked and folded unfold and open childs
+    let clength = node.childs.length;
+    if (node.checkStatus && clength > 0) {
+      //make element looks like is folded
+      node.foldedStatus = true;
+      this.toggleNode(node);
+    }
+    //trigger callback if exists
+    if (typeof this.switchCallback == "function") this.switchCallback(node);
+    //check html element if family mode is open
+    document.getElementById("ck_" + node.id).checked = node.checkStatus;
+  }
+
+  /**
+   * this method will check node childs and his parents if not checked.
+   * @param {object} node
+   */
+  checkNodeFamily(node) {
+    let status = node.checkStatus;
+    let parentCheck = async (node) => {
+      //first check if has parent
+      if (node.parent.id !== 0) {
+        //get parent node
+        node = node.parent;
+        let trans = () => {
+          //change parent node status
+          node.checkStatus = status;
+          //check parent node
+          this.checkNode(node);
+          //then restart process
+          parentCheck(node);
         };
-
-        if(this.config.ajax !== undefined && this.config.ajax.headers !== undefined) op.headers = this.config.ajax.headers
-
-        if (rqs.method !== 'GET') {
-            op.body = fD;
+        //decide for uncheck
+        if (!status) {
+          //if all childs is unchecked or child count is equal to 1
+          let valid = true;
+          let childs = node.getChilds();
+          for (let i = 0; i < childs.length; i++) {
+            if (childs[i].checkStatus) {
+              valid = false;
+            }
+          }
+          if (valid) trans();
+        } else {
+          trans();
         }
-        return await fetch(rqs['url'], op).then((response) => {
-            //convert to json
-            return response.json();
-        });
+      }
+    };
+
+    let childCheck = async (node) => {
+      //first check main node
+      this.checkNode(node);
+      //then check childs if exist
+      if (node.childs.length > 0) {
+        //foreach child
+        for (let i = 0; i < node.childs.length; i++) {
+          let c_node = this.getNode(node.childs[i].split("node_")[1]);
+          c_node.checkStatus = status;
+          //restart process
+          childCheck(c_node);
+        }
+      }
+    };
+    if (this.config.autoChild) childCheck(node);
+    if (this.config.autoParent) parentCheck(node);
+  }
+
+  /**
+   * this method will unfold all parents of node
+   * @param {object} node
+   */
+  async showFamily(node) {
+    //check if has parent
+    if (node.parent.id !== 0) {
+      //then make node status closed
+      node.parent.foldedStatus = true;
+      //after send parent node for toggle
+      this.toggleNode(node.parent);
+      //make recursive for another parents
+      this.showFamily(node.parent);
+    }
+  }
+  //#endregion
+
+  //#region Node Creator
+
+  /**
+   * creating node
+   * @param {object} obj
+   */
+  createNode(obj) {
+    const id = Date.now();
+    const node = {
+      //node value
+      value: id,
+      //node id
+      id: this.target + "node_" + id,
+      //node title
+      title: "untitled " + id,
+      //node html elements
+      elements: [],
+      //order number
+      order: null,
+      //node parent element
+      parent: { id: 0 },
+      // child element ids
+      childs: [],
+      //addional info
+      addional: {},
+      //childs status (child list opened or not)
+      foldedStatus: this.config.foldedStatus,
+      //check status for node
+      checkStatus: false,
+      //this method will return child nodes
+      getChilds: () => this.getChilds(node),
+      //this method will remove node from dom
+      deleteNode: () => this.deleteNode(node),
+      //this method will update node
+      updateNode: () => this.updateNode(node),
+      //this method will toggle node
+      toggleNode: () => this.toggleNode(node),
+      //this method will show node location
+      showFamily: () => this.showFamily(node),
+      //check node
+      toggleCheck: (status) => {
+        node.checkStatus = status;
+        this.checkNode(node);
+      },
+    };
+
+    //check setted values here!!
+    for (let key in obj) {
+      if (obj[key] !== undefined) node[key.split("_")[1]] = obj[key];
+      if (key === "n_id") node["id"] = this.target + "node_" + obj["n_id"];
     }
 
-    /**
-     * this method clear all data on table 
-     */
-    clearData(){
-        //reset table data 
-        this.config.currentData = {};
-        this.config.pageCount=1; //table page count (will calculating later)
-        //this.config.pageLimit=10; //table page limit
-        this.config.tableData={};
-        this.config.currentPage=1; //table current page
-        this.config.currentData={}; //table current data
+    if (node.order === null) node.order = 0;
 
-        //clean body
-        this.config.body.innerHTML = '';
-        //clean pagination
-        this.config.pagination.innerHTML = '';
+    //node is added to container
+    this.nodeList[obj["n_id"]] = node;
+    //node is drawed
+    this.drawNode(node);
+    //logged
+    this.log("Node is created (" + node.id + ")");
+    //node is returned
+    return node;
+  }
+
+  /**
+   * this method will update node
+   * !! id is recommended
+   */
+  updateNode(node) {
+    //first remove old node
+    //console.log(this.getNode(node.id.split('_')[1]))
+    this.getNode(node.id.split("node_")[1]).deleteNode();
+    //clear old parent's childs if old parent info is exist
+    if (node.old_parent !== undefined && node.old_parent.id !== 0) {
+      this.nodeList[node.old_parent.value].childs = this.nodeList[node.old_parent.value].childs.filter((x) => {
+        return x !== node.id;
+      });
+      //if child count is 0 then remove minus icon
+      if (this.nodeList[node.old_parent.value].childs.length === 0) {
+        document.getElementById("i_" + node.old_parent.id).style.display = "none";
+      }
+    }
+    //draw new node with childs
+    let set = (data) => {
+      this.drawNode(data);
+      let childs = data.getChilds();
+      if (childs.length > 0) {
+        for (let i = 0; i < childs.length; i++) {
+          set(childs[i]);
+        }
+      }
+    };
+    set(node);
+
+    //log
+    this.log("Node is created (" + node.id + ")");
+    //return node
+    return node;
+  }
+
+  /**
+   *
+   * @param {object} node object for creating html element
+   */
+  drawNode(node) {
+    let icon = this.config.unFoldedIcon;
+    let style = "";
+    let defaultClass = "active";
+
+    if (node.foldedStatus) {
+      icon = this.config.foldedIcon;
+      style = "none";
+      defaultClass = "not-active";
+    }
+    //#region elements
+
+    //node li item
+    let li_item = document.createElement("li");
+    //node a item
+    let a_item = document.createElement("a");
+    //node i item
+    let i_item = document.createElement("i");
+    //node ul item
+    let ul_item = document.createElement("ul");
+    //node group item
+    let div_item = document.createElement("div");
+
+    //make node ordarable
+    if (this.config.order) {
+      const o_div = document.createElement("div");
+      o_div.id = "order_" + node.id;
+      //create buttons
+      const up_i = document.createElement("i");
+      const dw_i = document.createElement("i");
+
+      o_div.classList.add("tree_order_div");
+
+      up_i.classList.add("fa", "fa-arrow-up");
+      up_i.dataset.target = "1";
+      dw_i.classList.add("fa", "fa-arrow-down");
+      dw_i.dataset.target = "0";
+
+      o_div.appendChild(up_i);
+      o_div.appendChild(dw_i);
+      //ordering event
+      o_div.onclick = (e) => (e.target.tagName == "I" ? this.orderNode(e) : false);
+
+      div_item.appendChild(o_div);
     }
 
-    /**
-     * this method will set data from data container or ajax target
-     * @param {object} data 
-     */
-    addRow(data,outside=true,prepend = false,count = 0){
-        data.columnElms = {};
-        const row = document.createElement('tr');
-        //trigger row formatter if exist
-        if(this.config.rowFormatter !== null){
-            const modifiedData = this.config.rowFormatter(row,data);
-            //if new data returned set to row data
-            if(modifiedData !== undefined) data = modifiedData;
-        }
+    //make node dragable
+    if (this.config.drag) {
+      //add drag button to start
+      const a_ditem = document.createElement("a");
+      const i_ditem = document.createElement("i");
+      //set icon drag button
+      i_ditem.classList.add("fa");
+      i_ditem.classList.add("fa-bars");
+      a_ditem.classList.add("drag-handler");
 
-        //set row click if setted
-        if(this.config.rowClick !== null){
-            row.onclick = () => this.config.rowClick(row,data);
-        }
-
-        for(let i = 0;i<this.config.headers.length;i++){
-            const column = document.createElement('td');
-            //set header text align
-            if(this.config.headers[i].colAlign !== undefined) column.style.textAlign = this.config.headers[i].colAlign;
-            //trigger column formatter if exist
-            if(this.config.headers[i].columnFormatter !== undefined){
-                column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
-            }else{
-                column.innerHTML = data[this.config.headers[i].key];
-            }
-
-            const isVisible = !(document.querySelector('th[data-key="'+this.config.headers[i].key+'"]').style.display === 'none');
-            //check if header is visible
-            if(!isVisible) column.style.display = 'none';
-            
-            row.appendChild(column);
-            //set columnt click if exist
-            if(this.config.headers[i].columnClick !== undefined){
-                column.onclick = () => this.config.headers[i].columnClick(column,data,data[this.config.headers[i].key]);
-            }
-
-            data.columnElms[this.config.headers[i].key] = column;
-        }
-        if(parseInt(this.config.pageLimit) !== -1 && this.config.paginationType === 'scroll' && count === parseInt(this.config.pageLimit-(this.config.pageLimit/3))){
-            //add class for data appending..
-            row.classList.add('page-flag');
-            row.dataset.next = 'waiting';
-            this.pageObserver.observe(row);
-        }
-        
-
-        //set elements to data
-        data.rowElm = row;
-
-        //set data to container
-        this.config.currentData['row_'+data.id] = data;
-
-        //id added from outside calculate new page count value
-        if(outside){
-            //add to table data
-            const tempObj = {}
-            tempObj['row_'+data.id] = data;
-            this.config.tableData = {
-                ...tempObj,
-                ...this.config.tableData
-            };
-            
-            //recalculate page count 
-            this.config.pageCount = Math.ceil(Object.values(this.config.tableData).length / this.config.pageLimit);
-            
-            //recalculate pagination if local data
-            if(this.config.type === 'local') this.calcPagination();
-            //remove last child from current page if the page limit has been exceeded
-            if(parseInt(this.config.pageLimit) > 0 && this.config.pageLimit <= Object.values(this.config.currentData).length){
-                this.config.referance.querySelector('table tbody tr:last-child').remove();
-            }
-        }
-
-        if(prepend) {
-            //add out row to top
-            this.config.body.prepend(row);
-        }else{
-            //append row to body
-            this.config.body.append(row);
-        }
+      a_ditem.id = "a_dr_" + node.id;
+      a_ditem.appendChild(i_ditem);
+      a_ditem.href = "javascript:;";
+      a_ditem.setAttribute("dragable", true);
+      a_ditem.setAttribute("drag-title", node.title);
+      //icon added to div
+      div_item.appendChild(a_ditem);
+      div_item.classList.add("drop_target");
     }
 
-    /**
-     * this method will update table row with formatter callback
-     * @param {int} rowId 
-     * @param {object} data 
-     */
-    updateRow(rowId,data = null){
-        const row = this.config.currentData['row_'+rowId];
-        if(row !== undefined){
-            //foreach header
-            for(let i = 0;i<this.config.headers.length;i++){
-                //column key
-                const key = this.config.headers[i].key;
-                if(data[key] !== undefined){
-                    //get column element
-                    const column = row.columnElms[key];
-                    //update element
-                    if(this.config.headers[i].columnFormatter !== undefined){
-                        column.innerHTML = this.config.headers[i].columnFormatter(column,row,data[key]);
-                    }else{
-                        column.innerHTML = data[key];
-                    }
-                    this.config.currentData['row_'+rowId][key] = data[key];
-                }
-            }
-            //set foreach data
-            for(let key in data){
-                this.config.currentData['row_'+rowId][key] = data[key];
-            }
+    //set i item id
+    i_item.id = "i_" + node.id;
+    //set i item style
+    i_item.style.color = "black";
+    //set i item icon
+    icon = icon.split(" ");
+    for (let i = 0; i < icon.length; i++) {
+      i_item.classList.add(icon[i]);
+    }
+    i_item.style.display = "none";
 
+    //set ul item id
+    ul_item.id = "c_" + node.id;
 
-            if(this.config.rowFormatter !== null) this.config.rowFormatter(row.rowElm,row);
-            return true;
-        }else{
-            return false;
+    //set ul item style
+    //ul_item.style.display = style;
+
+    //set ul item class
+    ul_item.classList.add(defaultClass);
+
+    //set a item id
+    a_item.id = "a_toggle_" + node.id;
+    //set i tag to a item
+    a_item.appendChild(i_item);
+    //set a item href
+    a_item.href = "javascript:;";
+    //set a_item title
+    a_item.innerHTML += " " + node.title;
+
+    a_item.onclick = (e) => this.toggleNode(node);
+
+    //set li item id
+    li_item.id = node.id;
+    li_item.dataset.order = "order_" + node.order;
+
+    div_item.id = "div_g_" + node.id;
+    //set a tag to div item
+    div_item.appendChild(a_item);
+
+    //set switch to li item if user is wanted
+    if (this.config.switchMode) {
+      const sw_item = document.createElement("label");
+      const ck_item = document.createElement("input");
+      const spn_item = document.createElement("span");
+      spn_item.classList.add("slider");
+      spn_item.classList.add("round");
+      ck_item.type = "checkbox";
+      sw_item.classList.add("switch");
+
+      sw_item.appendChild(ck_item);
+      sw_item.appendChild(spn_item);
+
+      //id definitions
+      ck_item.id = "ck_" + node.id;
+      sw_item.id = "sw_" + node.id;
+
+      ck_item.value = node.value;
+      //if item created as checked
+      ck_item.checked = node.checkStatus;
+
+      ck_item.onclick = (e) => {
+        node.checkStatus = e.target.checked;
+        if (this.config.autoChild || this.config.autoParent) {
+          this.checkNodeFamily(node);
         }
+        this.checkNode(node);
+      };
+
+      //switch is added to li element
+      div_item.appendChild(sw_item);
+    }
+    //if node has extra elements
+    if (node.elements.length > 0) {
+      //add menu button to end
+      let a_item = document.createElement("a");
+      let i_item = document.createElement("i");
+      //set icon for menu
+
+      for (let i = 0; i < this.config.menuIcon.length; i++) {
+        i_item.classList.add(this.config.menuIcon[i]);
+      }
+
+      a_item.id = "a_me_" + node.id;
+      a_item.appendChild(i_item);
+      a_item.href = "javascript:;";
+      a_item.classList.add("menuIcon");
+      //icon added to div
+      div_item.appendChild(a_item);
     }
 
-    /**
-     * this method will delete table row 
-     * @param {int} rowId 
-     */
-    deleteRow(rowId){
-        if(this.config.currentData['row_'+rowId] !== undefined){
-            //remove element
-            this.config.currentData['row_'+rowId].rowElm.remove();
-            //delete item from stack
-            delete this.config.currentData['row_'+rowId];
-            //recalculate page count if local data
-            if(this.config.type === 'local'){
-                const list = Object.values(this.config.tableData);
-                //if all data is not wanted
-                this.config.pageCount = list.length!==0 ? Math.ceil(list.length / this.config.pageLimit) : 1;
-                //recalculate pagination
-                this.calcPagination();
-                //get an item from another page to this page 
-                const data = list.slice(this.config.currentPage*this.config.pageLimit , (this.config.currentPage+1)*this.config.pageLimit);
+    li_item.appendChild(div_item);
+    //set ul tag to li item
+    li_item.appendChild(ul_item);
 
-                //add next page item to this page
-                if(data.length > 0)this.addRow(data[0],false);
-            }
-            return true;
-        }else{
-            return false;
-        }
-    }
-
-    /**
-     * this method will return row data if exist in current page
-     * @param {integer} rowId 
-     */
-    getRow(rowId){
-        return this.config.currentData['row_'+rowId];
-    }
-
-
-    /**
-     * this method will set filter after data is loaded
-     * @param {object} data 
-     */
-    async setFilter(data = []){
-        //check if filter lock is on
-        while(this.config.filterLock === true){
-            await (new Promise(resolve => setTimeout(resolve, 200)));
-        }
-        //lock filter
-        this.config.filterLock = true;
-        this.config.isFiltering = true;
-        //set filter
-        this.currentFilter = data;
-        //set to first page
-        this.config.currentPage = 1;
-        //get data again
-        await this.getData();
-        //unlock filter
-        //this.config.filterLock = false;
-    }
-
-
-    /**
-     * this method will calculate pagination
-     */
-    calcPagination(){
-        if(this.config.pageCount > 0 && this.config.paginationType !== 'scroll'){
-            let start = 1;
-            let limit = 5;
-            let end = 6;
-            if(this.config.currentPage  > 3){
-                //possible values
-                const possStart = this.config.currentPage - 2;
-                const possEnd = possStart+limit;
-                //end is higher then page count
-                if(possEnd >= this.config.pageCount){
-                    start = this.config.pageCount - limit;
-                    end = this.config.pageCount;
-                }else{
-                    //normal limits
-                    start = possStart > 0 ? possStart : 1;
-                    //set limit
-                    end = possEnd;
-                }
-                // minus value check
-                start = start > 0 ? start : 1;
-            }
-            this.config.pagination.innerHTML = '';
-        
-            //start building buttons
-            const buildBtn = (count,title) => {
-                //create buttons
-                const btn = document.createElement('button');
-                btn.innerHTML = title;
-                btn.type = 'button';
-                btn.dataset.page = count;
-                btn.classList.add('btn_page');
-                //add current tag if current page
-                if(count === parseInt(this.config.currentPage)){
-                    btn.classList.add('current');
-                }
-                //add button to pagnation div
-                this.config.pagination.appendChild(btn);
-            }
-            //put first button
-            buildBtn(1,'İlk');
-            for(let i=start;i<=end;i++){
-                //create buttons
-                buildBtn(i,i);
-                if(i === this.config.pageCount) break;
-            }
-            //put last button
-            buildBtn(this.config.pageCount,'Son');
-        }else{
-            this.config.pagination.innerHTML = '';
-        }
-    }
-
-    /**
-     * this method will change page
-     * @param {integer} page 
-     */
-    async changePage(page){
-        //set page
-        this.config.currentPage = page;
-        //set data
-        await this.getData();
-
-        //run callback
-        //trigger after render if not null
-        if(this.config.pageChanged !== null) this.config.pageChanged(
-            this.config.currentData, //current rendered data
-            this.config.currentPage, //current rendered page
-        );
-    }
     //#endregion
+
+    //if is main node
+    //check if element is exist for preventing copy elements
+    if (node.parent.id === 0) {
+      //put item to area
+      this.area.appendChild(li_item);
+    } else {
+      //if has parent set to parents childs
+      this.setChildNodes(node);
+      //then put item
+      document.getElementById("c_" + node.parent.id).appendChild(li_item);
+    }
+
+    //node.element = li_item;
+
+    //set node events
+    this.setNodeEvents(node, div_item);
+
+    //draw callback  method
+    if (typeof this.rowCreateCallback == "function") this.rowCreateCallback(node);
+  }
+
+  setNodeEvents(node, parent) {
+    //order event for node
+    if(this.config.order){
+          node.element.getElementById('order_'+node.id).addEventListener('click',e=>{
+              if(e.target.tagName == 'I'){
+                  const isBefore = e.target.dataset.target == 1;
+                  const main = e.target.parentNode.parentNode.parentNode;
+                  const target = isBefore ? main.previousElementSibling : main.nextElementSibling;
+                  //get nodes
+                  if(target !== null){
+                      //replace data
+                      const targetNode = this.getNode(target.id.split('_treenode_')[1]);
+                      const mainNode   = this.getNode(main.id.split('_treenode_')[1]);
+                      //console.log( mainNode.order,targetNode.order);
+                      const currentOrder = mainNode.order;
+                      const targetOrder  = targetNode.order === mainNode.order ? (isBefore ? targetNode.order-1 : targetNode.order+1 )  : targetNode.order;
+                      //change order data
+                      targetNode.order = currentOrder;
+                      mainNode.order   = targetOrder;
+                      //console.log( mainNode.order,targetNode.order);
+                      //replace element
+                      main.parentNode.replaceChild(main,target);
+                      main.parentNode.insertBefore(target, isBefore ? main.nextSibling : main);
+                  }
+              }
+              
+          });
+      }
+  }
+
+  /**
+   * this method will draw multiple data
+   */
+  drawData() {
+    //start loading
+
+    //if data is exist
+    if (this.data.length > 0) {
+      //first reshape data
+      let order = (list, p = { n_id: 0, Child: [] }, tree = []) => {
+        let childrens = list.filter((y) => y.n_parentid === p.n_id);
+        if (childrens.length > 0) {
+          // order items by order_num param if exist
+          childrens.sort((a, b) => parseFloat(a.n_order_num === undefined ? 0 : a.n_order_num) - parseFloat(b.n_order_num === undefined ? 0 : b.n_order_num));
+          if (p.n_id === 0) {
+            tree = childrens;
+          } else {
+            p.Child = childrens;
+          }
+          for (let i = 0; i < childrens.length; i++) {
+            order(list, childrens[i]);
+          }
+        }
+        return tree;
+      };
+
+      //then create nodes
+      let set = (list) => {
+        for (let i = 0; i < list.length; i++) {
+          this.createNode({
+            n_data: list[i],
+            n_addional: list[i].n_addional,
+            n_value: list[i].n_id,
+            n_title: list[i].n_title,
+            n_id: list[i].n_id,
+            n_elements: list[i].n_elements,
+            n_parent: this.getNode(list[i].n_parentid),
+            n_checkStatus: list[i].n_checkStatus === undefined ? false : list[i].n_checkStatus,
+            n_order: list[i].n_order_num,
+          });
+          if (list[i].Child) {
+            set(list[i].Child);
+          }
+        }
+      };
+      //start chain
+      set(order(this.data));
+    }
+
+    //start drawcallback
+    if (this.drawCallback !== undefined) this.drawCallback();
+    //end loading
+  }
+
+  //#endregion
+
+  //#region Menu
+
+  getMenu(element, node) {
+    //get element location
+    let x = element.getBoundingClientRect();
+    const origin = {
+      node: node,
+      left: x.x,
+      top: x.y + x.height,
+    };
+    //draw menu
+    this.drawMenu(origin);
+  }
+
+  drawMenu(obj) {
+    //check if menu already exist
+    if (document.getElementById("div_menu_" + obj.node.id) === null) {
+      //create menu div
+      const menu_item = document.createElement("div");
+      //add to body
+      document.body.appendChild(menu_item);
+      menu_item.id = "div_menu_" + obj.node.id;
+      menu_item.classList.add("ptreemenuCont");
+
+      //for each menu item
+      let span_item;
+      let icon;
+      for (let i = 0; i < obj.node.elements.length; i++) {
+        span_item = document.createElement("span");
+        span_item.setAttribute("data-node", obj.node.id);
+        icon = obj.node.elements[i].icon.trim().length > 0 ? '<i class="' + obj.node.elements[i].icon.trim() + '"></i>' : "";
+        span_item.innerHTML = icon + " " + obj.node.elements[i].title.trim();
+
+        menu_item.appendChild(span_item);
+
+        //then add click event
+        span_item.addEventListener("click", (e) => {
+          obj.node.elements[i].onClick(this.getNode(e.target.getAttribute("data-node").split("node_")[1]));
+          //remove menu after click
+          menu_item.outerHTML = "";
+        });
+      }
+      //calculate location
+      if (screen.width - obj.left < menu_item.offsetWidth) {
+        menu_item.style.left = obj.left - menu_item.offsetWidth + "px";
+      } else {
+        menu_item.style.left = obj.left + "px";
+      }
+      menu_item.style.top = obj.top + "px";
+
+      // listen mouse out
+      menu_item.onmouseleave = (e) => {
+        menu_item.remove();
+      };
+    }
+  }
+
+  //#endregion
 }
