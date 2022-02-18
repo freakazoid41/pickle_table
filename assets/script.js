@@ -354,7 +354,7 @@ class PickleTable {
                 }
             }).then(rsp=>{
                 //clean current data
-                this.config.currentData = {};
+                if(this.config.paginationType !== 'scroll') this.config.currentData = {};
                 //set page count and current data
                 if(rsp.pageCount !== undefined) this.config.pageCount = rsp.pageCount;
                 //set data
