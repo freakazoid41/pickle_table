@@ -60,7 +60,7 @@ class PickleTable {
         if(this.config.paginationType === 'scroll'){
             this.pageObserver = new IntersectionObserver((entries) => {
                 //console.log(e,elm)
-                if(entries[0]['intersectionRatio'] > 0.5 && entries[0].target.dataset.next === 'waiting') {
+                if((entries[0].intersectionRatio > 0 || checkVisible(entries[0].target)) && entries[0].target.dataset.next === 'waiting') {
                     entries[0].target.dataset.next = 'loaded';
                     this.changePage(this.config.currentPage+1);
                 }
