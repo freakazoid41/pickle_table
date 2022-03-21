@@ -58,6 +58,11 @@ class PickleTable {
         });
         //listen scroll pagination
         if(this.config.paginationType === 'scroll'){
+            const checkVisible = (elm) => {
+                const rect = elm.getBoundingClientRect();
+                const viewHeight = Math.max(document.documentElement.clientHeight, window.innerHeight);
+                return !(rect.bottom < 0 || rect.top - viewHeight >= 0);
+            };
             this.pageObserver = new IntersectionObserver((entries) => {
                 //console.log(e,elm)
                 if((entries[0].intersectionRatio > 0 || checkVisible(entries[0].target)) && entries[0].target.dataset.next === 'waiting') {
