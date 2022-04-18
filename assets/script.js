@@ -508,7 +508,7 @@ class PickleTable {
             //recalculate pagination if local data
             if(this.config.type === 'local') this.calcPagination();
             //remove last child from current page if the page limit has been exceeded
-            if(parseInt(this.config.pageLimit) > 0 && this.config.pageLimit <= Object.values(this.config.currentData).length){
+            if(parseInt(this.config.pageLimit) > 0 && this.config.pageLimit < Object.values(this.config.currentData).length){
                 this.config.referance.querySelector('table tbody tr:last-child').remove();
             }
         }
