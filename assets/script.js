@@ -162,26 +162,30 @@ class PickleTable {
                 input.style.width = '100%';
                 input.name = this.config.headers[i].key;
 
-                input.onchange = () => {
-                    const elms = this.config.referance.querySelectorAll('.search-input');
-                    const filter = [];
-                    for(let i=0;i<elms.length;i++){
-                        if(elms[i].value.trim() != ''){
-                            filter.push({
-                                key   : elms[i].name, // column key
-                                type  : 'like', // filtering type ('like','<','>')
-                                value : elms[i].value.trim() //wanted column value
-                            });
+                input.onchange = (e) => {
+                    if(this.config.headers[i].searchCallback === undefined){
+                        const elms = this.config.referance.querySelectorAll('.search-input');
+                        const filter = [];
+                        for(let i=0;i<elms.length;i++){
+                            if(elms[i].value.trim() != ''){
+                                filter.push({
+                                    key   : elms[i].name, // column key
+                                    type  : 'like', // filtering type ('like','<','>')
+                                    value : elms[i].value.trim() //wanted column value
+                                });
+                            }
+                            
                         }
-                        
-                    }
-                    //add initial filter to search
-                    if(this.config.initialFilter.length > 0){
-                        for(let i=0;i<this.config.initialFilter.length;i++){
-                            filter.push(this.config.initialFilter[i]);
+                        //add initial filter to search
+                        if(this.config.initialFilter.length > 0){
+                            for(let i=0;i<this.config.initialFilter.length;i++){
+                                filter.push(this.config.initialFilter[i]);
+                            }
                         }
+                        this.setFilter(filter);
+                    }else{
+                        this.config.headers[i].searchCallback(e.target.value,e.target);
                     }
-                    this.setFilter(filter);
                 };
 
 
@@ -461,7 +465,12 @@ class PickleTable {
             if(this.config.headers[i].colAlign !== undefined) column.style.textAlign = this.config.headers[i].colAlign;
             //trigger column formatter if exist
             if(this.config.headers[i].columnFormatter !== undefined){
-                column.innerHTML = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
+                const newData = this.config.headers[i].columnFormatter(column,data,data[this.config.headers[i].key]);
+                if(typeof newData === 'object'){
+                    column.appendChild(newData);
+                }else{
+                    column.innerHTML = newData;
+                }
             }else{
                 column.innerHTML = data[this.config.headers[i].key];
             }
@@ -535,22 +544,29 @@ class PickleTable {
                 //column key
                 const key = this.config.headers[i].key;
                 if(data[key] !== undefined){
+                    this.config.currentData['row_'+rowId][key] = data[key];
+
                     //get column element
                     const column = row.columnElms[key];
                     //update element
                     if(this.config.headers[i].columnFormatter !== undefined){
-                        column.innerHTML = this.config.headers[i].columnFormatter(column,row,data[key]);
+                        const newData = this.config.headers[i].columnFormatter(column,row,data[this.config.headers[i].key]);
+                        if(typeof newData === 'object'){
+                            column.innerHTML = '';
+                            column.appendChild(newData);
+                        }else{
+                            column.innerHTML = newData;
+                        }
                     }else{
                         column.innerHTML = data[key];
                     }
-                    this.config.currentData['row_'+rowId][key] = data[key];
+                    
                 }
             }
             //set foreach data
             for(let key in data){
                 this.config.currentData['row_'+rowId][key] = data[key];
             }
-
 
             if(this.config.rowFormatter !== null) this.config.rowFormatter(row.rowElm,row);
             return true;
