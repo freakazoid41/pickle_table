@@ -30,6 +30,7 @@ const headers = [
       headAlign:'center', //text center will add to column header
       colAlign:'center',  //text center will add to all columns
       type:'number', // if column is number then make type number
+      searchCallback: (value,elm) => console.log(value,elm) // column input search callback
   },
   {
       title:'Title',
