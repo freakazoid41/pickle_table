@@ -26,6 +26,7 @@ class PickleTable {
             pageChanged  : null,
             rowClick     : null,
             rowFormatter : null,
+            rowAdded     : null,
             columnSearch : false,
         };  
 
@@ -529,6 +530,8 @@ class PickleTable {
             //append row to body
             this.config.body.append(row);
         }
+        // execute row added callfack if exist
+        if(this.config.rowAdded != null) this.config.rowAdded(row,data);
     }
 
     /**
