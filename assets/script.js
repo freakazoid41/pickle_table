@@ -251,7 +251,7 @@ class PickleTable {
             let list = Object.values(this.config.tableData);
             //if order is not null
             if(order !== undefined){
-                //this.currentOrder = order;
+                this.currentOrder = order;
                 const sortColumn = (a,b) =>{
                     //there is a 3 type ordering (string - date - number)
                     
