@@ -93,7 +93,7 @@ class PickleTable {
 
         //build headers and table skeleton
         const table = document.createElement('table');
-        table.classList.add('fade-in');
+        table.classList.add('table','align-middle','table-row-dashed','fs-6','gy-5','dataTable','no-footer');
         table.style.width = '100%';
         //temporary
         table.style.display = 'none';
@@ -177,12 +177,7 @@ class PickleTable {
                             }
                             
                         }
-                        //add initial filter to search
-                        if(this.config.initialFilter.length > 0){
-                            for(let i=0;i<this.config.initialFilter.length;i++){
-                                filter.push(this.config.initialFilter[i]);
-                            }
-                        }
+                        
                         this.setFilter(filter);
                     }else{
                         this.config.headers[i].searchCallback(e.target.value,e.target);
@@ -408,6 +403,9 @@ class PickleTable {
 
         const op = {
             method: rqs.method,
+            headers: {
+                ...(document.querySelector('meta[name="csrf-token"]') !== null ? {'X-CSRF-TOKEN' : document.querySelector('meta[name="csrf-token"]').content,} : {})
+            },
             mode  : 'cors',
             credentials: 'include' 
         };
@@ -621,6 +619,14 @@ class PickleTable {
      * @param {object} data 
      */
     async setFilter(data = []){
+        //add initial filter to search
+        if(this.config.initialFilter.length > 0){
+            for(let i=0;i<this.config.initialFilter.length;i++){
+                data.push(this.config.initialFilter[i]);
+            }
+        }
+
+
         //check if filter lock is on
         while(this.config.filterLock === true){
             await (new Promise(resolve => setTimeout(resolve, 200)));
@@ -674,6 +680,9 @@ class PickleTable {
                 btn.type = 'button';
                 btn.dataset.page = count;
                 btn.classList.add('btn_page');
+
+                if(!isNaN(title)) btn.classList.add('btn_page','btn_number');
+
                 //add current tag if current page
                 if(count === parseInt(this.config.currentPage)){
                     btn.classList.add('current');
@@ -682,14 +691,14 @@ class PickleTable {
                 this.config.pagination.appendChild(btn);
             }
             //put first button
-            buildBtn(1,'İlk');
+            buildBtn(1,'<i class="fa-solid fa-chevron-left"></i>');
             for(let i=start;i<=end;i++){
                 //create buttons
                 buildBtn(i,i);
                 if(i === this.config.pageCount) break;
             }
             //put last button
-            buildBtn(this.config.pageCount,'Son');
+            buildBtn(this.config.pageCount,'<i class="fa-solid fa-chevron-right"></i>');
         }else{
             this.config.pagination.innerHTML = '';
         }
