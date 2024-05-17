@@ -90,6 +90,7 @@ const table = new PickleTable({
   container:'#div_table', //table target div
   headers:headers,
   pageLimit:10, // -1 for closing pagination
+  height:100%,
   //row formatting callback
   rowFormatter:(elm,data)=>{
       //console.log(elm,data);
