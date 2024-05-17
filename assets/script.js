@@ -2,6 +2,7 @@ class PickleTable {
     constructor(config){
         this.config = {
             filterLock : false,
+            height:'100%',
             referance:null,
             container:'', // target contianer for build
             headers:[], //table headers (object)
@@ -101,7 +102,10 @@ class PickleTable {
         const headers = document.createElement('thead');
         const divTable = document.createElement('div');
         divTable.classList.add('divTable');
-       
+
+        //set main container height
+        this.config.referance.setAttribute('style','height:'+this.config.height+' !important;');
+        
         this.config.pagination = document.createElement('div');
         this.config.pagination.classList.add('divPagination');
 
