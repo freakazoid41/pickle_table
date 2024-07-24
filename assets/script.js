@@ -4,6 +4,7 @@ class PickleTable {
             filterLock : false,
             height:'100%',
             referance:null,
+            showTotals : false,
             container:'', // target contianer for build
             headers:[], //table headers (object)
             type:'local', //data type local or ajax 
@@ -28,6 +29,8 @@ class PickleTable {
             rowClick     : null,
             rowFormatter : null,
             rowAdded     : null,
+            ajaxDataCallback : null,
+            ajaxReturnCallback : null,
             columnSearch : false,
         };  
 
@@ -102,7 +105,7 @@ class PickleTable {
         const headers = document.createElement('thead');
         const divTable = document.createElement('div');
         divTable.classList.add('divTable');
-
+        
         //set main container height
         this.config.referance.setAttribute('style','height:'+this.config.height+' !important;');
         
@@ -156,22 +159,41 @@ class PickleTable {
             }
             
           
-
-
             //create search input
             if(this.config.columnSearch && this.config.headers[i].key!=='#'){
-                //const sitem = document.createElement('th');
-                const input = document.createElement('input');
                 
+                //const sitem = document.createElement('th');
+                let input = document.createElement('input');
+               
+              
+
+                if(this.config.headers[i]?.searchType == 'select'){
+                    input = document.createElement('select');
+
+                    if(this.config.headers[i]?.searchValues?.length > 0){
+                        this.config.headers[i]?.searchValues.forEach(el => {
+                            const op = document.createElement('option');
+                            op.text = el.text;
+                            op.value = el.value;
+
+                            input.appendChild(op);
+                        });
+                    }
+                }
+
+                if(this.config.headers[i]?.searchClass?.length > 0) input.classList.add(...this.config.headers[i]?.searchClass);
                 input.classList.add('search-input');
                 input.style.width = '100%';
                 input.name = this.config.headers[i].key;
 
-                input.onchange = (e) => {
+                input.oninput = (e) => {
+                    
                     if(this.config.headers[i].searchCallback === undefined){
                         const elms = this.config.referance.querySelectorAll('.search-input');
                         const filter = [];
+                        
                         for(let i=0;i<elms.length;i++){
+                            
                             if(elms[i].value.trim() != ''){
                                 filter.push({
                                     key   : elms[i].name, // column key
@@ -234,6 +256,11 @@ class PickleTable {
      */
     async getData(order = this.currentOrder,filter = this.currentFilter){
         this.config.filterLock = true;
+
+        if(this.config?.showTotals === true){
+            this.addTotalsRow();
+        }
+        
         //start loader
         this.config.loader.style.display = '';
         const body = this.config.tableReferace.querySelector('tbody');
@@ -354,6 +381,10 @@ class PickleTable {
                 this.currentFilter = filter;
                 this.config.ajax.data.filter = filter;
             }
+
+            
+            if(this.config.ajaxDataCallback !== null) this.config.ajax.data = {...this.config.ajax.data,...this.config.ajaxDataCallback()};
+
             //send data request
             await this.request({
                 method:'POST',
@@ -375,6 +406,8 @@ class PickleTable {
                         this.addRow(rsp.data[i],false,false,i);
                     }
                 }
+
+                if(this.config.ajaxReturnCallback !== null) this.config.ajaxDataCallback(rsp);
             });
         }
         //create pagination
@@ -385,6 +418,8 @@ class PickleTable {
             this.config.currentData, //current rendered data
             this.config.currentPage //current rendered page
         );
+        
+       
         //close loader
         this.config.loader.style.display = 'none';
         body.style.display = '';
@@ -450,6 +485,7 @@ class PickleTable {
     addRow(data,outside=true,prepend = false,count = 0){
         data.columnElms = {};
         const row = document.createElement('tr');
+        const columnAddedCallbacks = [];
         //trigger row formatter if exist
         if(this.config.rowFormatter !== null){
             const modifiedData = this.config.rowFormatter(row,data);
@@ -478,11 +514,26 @@ class PickleTable {
                 column.innerHTML = data[this.config.headers[i].key];
             }
 
+            
+
             const isVisible = !(document.querySelector('th[data-key="'+this.config.headers[i].key+'"]').style.display === 'none');
             //check if header is visible
             if(!isVisible) column.style.display = 'none';
             
             row.appendChild(column);
+
+            //trigger column created event
+            if(this.config.headers[i].columnCreated !== undefined){
+                columnAddedCallbacks.push({
+                    event  : this.config.headers[i].columnCreated ,
+                    column : column,
+                    row    : row,
+                    data : data,
+                    columnData : data[this.config.headers[i].key]
+                });
+                //this.config.headers[i].columnCreated(column,row,data,data[this.config.headers[i].key]);
+            }
+
             //set columnt click if exist
             if(this.config.headers[i].columnClick !== undefined){
                 column.onclick = () => this.config.headers[i].columnClick(column,data,data[this.config.headers[i].key]);
@@ -534,6 +585,12 @@ class PickleTable {
         }
         // execute row added callfack if exist
         if(this.config.rowAdded != null) this.config.rowAdded(row,data);
+
+        //execute column added callbacks if exist
+        for(let i = 0; i < columnAddedCallbacks.length; i++) {
+            const event = columnAddedCallbacks[i]
+            event.event(event.column,event.row,event.data,event.columnData);
+        }
     }
 
     /**
@@ -607,6 +664,25 @@ class PickleTable {
         }else{
             return false;
         }
+    }
+
+    addTotalsRow(){
+        const tfoot = document.createElement('tfoot');
+        tfoot.classList.add('totals');
+
+        const row = document.createElement('tr');
+        for(let i = 0;i<this.config.headers.length;i++){
+            
+            const column = document.createElement('td');
+            column.innerHTML = this.config.headers[i]?.bottomData ?? '';
+
+            row.appendChild(column);
+
+            if(this.config.headers[i]?.bottomDataFormatter) this.config.headers[i]?.bottomDataFormatter(column)
+        }
+
+        tfoot.appendChild(row);
+        this.config.tableReferace.append(tfoot);
     }
 
     /**
