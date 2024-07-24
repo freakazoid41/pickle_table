@@ -160,6 +160,18 @@ const table = new PickleTable({
       data.rowAdded = 'i im added from row';
       return data;
   },
+  showTotals : true, //show footer totals
+  // send addional parameters to ajax request
+  ajaxDataCallback : () => {
+      return {
+          sideRights : 'something',
+          pointer    : true
+      }; 
+  },
+  // do anything from returned data
+  ajaxReturnCallback : (data) => {
+      console.log(data);
+  },
   //row click callback
   rowClick:(elm,data)=>{
       in_log.innerHTML = 'row clicked.. =>'+rowData.id+'\n' + in_log.innerHTML;
