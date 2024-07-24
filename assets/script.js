@@ -407,7 +407,7 @@ class PickleTable {
                     }
                 }
 
-                if(this.config.ajaxReturnCallback !== null) this.config.ajaxDataCallback(rsp);
+                if(this.config.ajaxReturnCallback !== null) this.config.ajaxReturnCallback(rsp);
             });
         }
         //create pagination
