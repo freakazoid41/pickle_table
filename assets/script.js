@@ -601,13 +601,13 @@ class PickleTable {
     updateRow(rowId,data = null){
         const row = this.config.currentData['row_'+rowId];
         if(row !== undefined){
+            //set data first 
+            for(let key in data) this.config.currentData['row_'+rowId][key] = data[key];
             //foreach header
             for(let i = 0;i<this.config.headers.length;i++){
                 //column key
                 const key = this.config.headers[i].key;
                 if(data[key] !== undefined){
-                    this.config.currentData['row_'+rowId][key] = data[key];
-
                     //get column element
                     const column = row.columnElms[key];
                     //update element
