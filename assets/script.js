@@ -97,7 +97,7 @@ class PickleTable {
 
         //build headers and table skeleton
         const table = document.createElement('table');
-        table.classList.add('table','align-middle','table-row-dashed','fs-6','gy-5','dataTable','no-footer');
+        table.classList.add('table','dataTable');
         table.style.width = '100%';
         //temporary
         table.style.display = 'none';
