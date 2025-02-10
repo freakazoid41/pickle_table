@@ -32,6 +32,8 @@ class PickleTable {
             ajaxDataCallback : null,
             ajaxReturnCallback : null,
             columnSearch : false,
+            nextPageIcon : null,
+            prevPageIcon : null
         };  
 
         //set custom table config
@@ -771,14 +773,16 @@ class PickleTable {
                 this.config.pagination.appendChild(btn);
             }
             //put first button
-            buildBtn(1,'<i class="fa-solid fa-chevron-left"></i>');
+
+
+            buildBtn(1,(this.config.prevPageIcon !== null ? this.config.prevPageIcon : '<i class="fa-solid fa-chevron-left"></i>'));
             for(let i=start;i<=end;i++){
                 //create buttons
                 buildBtn(i,i);
                 if(i === this.config.pageCount) break;
             }
             //put last button
-            buildBtn(this.config.pageCount,'<i class="fa-solid fa-chevron-right"></i>');
+            buildBtn(this.config.pageCount,(this.config.nextPageIcon !== null ? this.config.nextPageIcon : '<i class="fa-solid fa-chevron-right"></i>'));
         }else{
             this.config.pagination.innerHTML = '';
         }
