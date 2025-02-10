@@ -15,6 +15,9 @@
 
 
 ## Initiation And Using Example 
+> You can download files directly and call from html page or you can use 'npm install pickletable' then 'import PickleTable from 'pickletable''
+
+
 > Demo Page : http://table.picklecan.me/
 
 > Initiate like this :
