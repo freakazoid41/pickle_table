@@ -127,7 +127,9 @@ const table = new PickleTable({
       //console.log(currentData,currentPage);
   },
   type : 'local',
-  data : data
+  data : data,
+   nextPageIcon : '<i class="falan"></i>',
+   prevPageIcon : '<i class="boyle"></i>'
 });
 
 
