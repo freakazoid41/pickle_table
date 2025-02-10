@@ -15,8 +15,6 @@
 
 
 ## Initiation And Using Example 
-> You can download files directly and call from html page or you can use 'npm install pickletable' then 'import PickleTable from 'pickletable''
-
 
 > Demo Page : http://table.picklecan.me/
 
@@ -245,6 +243,7 @@ table.clearData();
 ## Installation
 
 - Just include js and css file to your project then you can use it
+- or install with npm : npm install pickletable => import PickleTable from 'pickletable'
 
 ### Clone
 
