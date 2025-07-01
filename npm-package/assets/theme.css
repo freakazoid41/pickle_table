@@ -1,0 +1,27 @@
+.pickletable .divPagination button.current {
+    background-color: darkgrey;
+    color: white;
+}
+.pickletable .divPagination button {
+    background-color: white;
+    color: black;
+    border: 1px solid darkgrey;
+    border-radius: 5px;
+}
+
+.pickletable .divPagination button:hover {
+    background-color: darkgrey;
+    color: white;
+}
+
+.pickletable .divPagination button {
+    transition-duration: 0.4s;
+}
+.pickletable .divPagination {
+    padding-top: 2px;
+}
+
+.pickletable tr{
+    background-color: white;
+}
+

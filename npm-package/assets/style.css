@@ -1,0 +1,188 @@
+@import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.2/css/all.min.css';
+
+.pickletable {
+    height: 100%;
+    overflow: auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /*align-items: center;*/
+    
+}
+
+.pickletable table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid darkgrey;
+    padding: 0;
+    justify-content: center;
+    white-space: nowrap;
+}
+.pickletable table {
+    font-family: arial, sans-serif;
+    border-collapse: collapse;
+    border: 1px solid darkgrey;
+    padding: 0;
+    table-layout: fixed;
+}
+
+.pickletable td,
+.pickletable th {
+    border: 1px solid #ddd;
+    text-align: left;
+    padding: 8px;
+    z-index: 1;
+}
+
+.pickletable td { text-overflow: ellipsis;overflow: hidden !important;}
+
+.pickletable th {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 0;
+    box-shadow: 0 0 10px 0 rgba(0,0,0,.1);
+    background-color: white;
+}
+
+.pickletable .orderable span:after{
+    content: '\f0dc';
+    font-family: "Font Awesome 5 Free" !important;
+    font-weight: 900;
+    font-style: normal;
+    margin:0px 0px 0px 10px;
+    text-decoration:none;
+}
+.pickletable .divPagination button {
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin-left: 2px;
+}
+
+.pickletable .divTable {
+    height: 90%;
+    overflow: auto;
+    /*border: 1px solid darkgrey;
+    border-radius: 5px;*/
+    border-bottom: 1px solid #ddd;
+}
+
+.pickletable .divPagination {
+    margin-top: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.pickletable .orderable:hover,
+.pickletable tr:hover {
+    background-color: whitesmoke;
+    cursor: pointer;
+}
+
+.pickletable .search-input{
+    width: 100%;
+    border-color: lightgrey !important;
+    border: 1px solid;
+    border-radius: 5px;
+    margin-top: 5px;
+}
+
+.pickletable .ploader {
+    border: 16px solid #f3f3f3;
+    border-radius: 50%;
+    border-top: 16px solid #3498db;
+    width: 120px;
+    height: 120px;
+    -webkit-animation: spin 2s linear infinite;
+    animation: spin 2s linear infinite;
+    margin:auto;
+    top:0;
+    left:0;
+    bottom:0;
+    right:0;
+    position:absolute;
+}
+
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+
+
+.pickletable .fade-in {
+    animation: fadeIn ease 2s;
+    -webkit-animation: fadeIn ease 2s;
+    -moz-animation: fadeIn ease 2s;
+    -o-animation: fadeIn ease 2s;
+    -ms-animation: fadeIn ease 2s;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-moz-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-webkit-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-o-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@-ms-keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+

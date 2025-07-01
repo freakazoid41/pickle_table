@@ -1,0 +1,23 @@
+{
+  "name": "pickletable",
+  "version": "1.0.6",
+  "description": "Vanilla JS Datatable",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/freakazoid41/pickle_table.git"
+  },
+  "keywords": [
+    "Datatable",
+    "PickleTable"
+  ],
+  "author": "Freakazoid41",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/freakazoid41/pickle_table/issues"
+  },
+  "homepage": "https://github.com/freakazoid41/pickle_table#readme"
+}
