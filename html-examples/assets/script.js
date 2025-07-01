@@ -669,6 +669,9 @@ class PickleTable {
     }
 
     addTotalsRow(){
+        const old = this.config.tableReferace.querySelector('tfoot');
+        if(old != null) old.remove();
+        
         const tfoot = document.createElement('tfoot');
         tfoot.classList.add('totals');
 
