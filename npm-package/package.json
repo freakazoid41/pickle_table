@@ -1,6 +1,6 @@
 {
   "name": "pickletable",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Vanilla JS Datatable",
   "main": "index.js",
   "scripts": {
