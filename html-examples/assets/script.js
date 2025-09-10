@@ -1,4 +1,4 @@
-class PickleTable {
+export default class PickleTable {
     constructor(config){
         this.config = {
             filterLock : false,
