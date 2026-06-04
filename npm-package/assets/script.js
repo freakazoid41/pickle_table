@@ -33,13 +33,19 @@ export default class PickleTable {
             ajaxReturnCallback : null,
             columnSearch : false,
             nextPageIcon : null,
-            prevPageIcon : null
+            prevPageIcon : null,
+            // grouping config
+            groupBy : null,
+            groupCollapsed : {},
+            groupFormatter : null,
+            groupToggleCallback : null
         };  
 
         //set custom table config
         for(let key in config){
             if(this.config[key] !== undefined) this.config[key] = config[key];
         }
+        
         //set startup filter if setted
         if(this.config.initialFilter.length > 0) this.currentFilter = this.config.initialFilter;
 
@@ -354,10 +360,15 @@ export default class PickleTable {
                 data = list;
             }
 
-            for(let i=0;i<data.length;i++){
-                if(data[i].id === undefined) data[i].id = (new Date).getTime();
-                //set row to table
-                this.addRow(data[i],false,false,i);
+            // check if grouping is enabled
+            if(this.config.groupBy !== null) {
+                this.renderGroups(data);
+            } else {
+                for(let i=0;i<data.length;i++){
+                    if(data[i].id === undefined) data[i].id = (new Date).getTime();
+                    //set row to table
+                    this.addRow(data[i],false,false,i);
+                }
             }
         }else{
             //get data via ajax
@@ -401,11 +412,19 @@ export default class PickleTable {
                 if(rsp.pageCount !== undefined) this.config.pageCount = rsp.pageCount;
                 //set data
                 if(rsp.data !== undefined && rsp.data.length > 0){
+                    // assign IDs if missing
                     for(let i=0;i<parseInt(rsp.filteredCount);i++){
-                        //set id if not exist
                         if(rsp.data[i].id===undefined) rsp.data[i].id = (new Date()).getTime()+'_'+i;
-                        //add to table
-                        this.addRow(rsp.data[i],false,false,i);
+                    }
+                    
+                    // check if grouping is enabled
+                    if(this.config.groupBy !== null) {
+                        this.renderGroups(rsp.data);
+                    } else {
+                        for(let i=0;i<parseInt(rsp.filteredCount);i++){
+                            //add to table
+                            this.addRow(rsp.data[i],false,false,i);
+                        }
                     }
                 }
 
@@ -483,11 +502,26 @@ export default class PickleTable {
     /**
      * this method will set data from data container or ajax target
      * @param {object} data 
+     * @param {boolean} outside 
+     * @param {boolean} prepend 
+     * @param {number} count 
+     * @param {string} groupValue - group identifier for grouped rows
+     * @param {boolean} isCollapsed - whether group is collapsed
      */
-    addRow(data,outside=true,prepend = false,count = 0){
+    addRow(data,outside=true,prepend = false,count = 0, groupValue = null, isCollapsed = false){
         data.columnElms = {};
         const row = document.createElement('tr');
         const columnAddedCallbacks = [];
+        
+        // add group data attributes if grouping is enabled
+        if(groupValue !== null) {
+            row.dataset.group = groupValue;
+            row.dataset.collapsed = isCollapsed;
+            if(isCollapsed) {
+                row.style.display = 'none';
+            }
+        }
+        
         //trigger row formatter if exist
         if(this.config.rowFormatter !== null){
             const modifiedData = this.config.rowFormatter(row,data);
@@ -808,5 +842,179 @@ export default class PickleTable {
             this.config.currentPage, //current rendered page
         );
     }
+    
+    /**
+     * Organize data into groups based on groupBy column
+     * @param {Array} data 
+     * @returns {Object} grouped data
+     */
+    organizeDataByGroup(data) {
+        const grouped = {};
+        
+        for(let i = 0; i < data.length; i++) {
+            const row = data[i];
+            let groupValue = row[this.config.groupBy];
+            
+            // handle null/undefined values
+            if(groupValue === null || groupValue === undefined) {
+                groupValue = '(Boş)';
+            } else {
+                // convert objects to string representation
+                if(typeof groupValue === 'object') {
+                    groupValue = JSON.stringify(groupValue);
+                } else {
+                    groupValue = String(groupValue);
+                }
+            }
+            
+            if(!grouped[groupValue]) {
+                grouped[groupValue] = [];
+            }
+            grouped[groupValue].push(row);
+        }
+        
+        return grouped;
+    }
+    
+    /**
+     * Render grouped data with collapsible group headers
+     * @param {Array} data 
+     */
+    renderGroups(data) {
+        const grouped = this.organizeDataByGroup(data);
+        
+        let rowIndex = 0;
+        
+        // iterate through each group
+        for(const [groupValue, groupRows] of Object.entries(grouped)) {
+            const isCollapsed = this.config.groupCollapsed[groupValue] || false;
+            
+            // create and add group header
+            const groupHeaderRow = this.createGroupHeader(groupValue, groupRows.length, isCollapsed);
+            this.config.body.appendChild(groupHeaderRow);
+            
+            // store reference for later toggle operations
+            if(!this.groupHeaderElements) this.groupHeaderElements = {};
+            this.groupHeaderElements[groupValue] = groupHeaderRow;
+            
+            // add rows for this group
+            for(let i = 0; i < groupRows.length; i++) {
+                const rowData = groupRows[i];
+                if(rowData.id === undefined) rowData.id = (new Date()).getTime();
+                
+                // add row with group information
+                this.addRow(rowData, false, false, rowIndex, groupValue, isCollapsed);
+                rowIndex++;
+            }
+        }
+    }
+    
+    /**
+     * Create group header row element
+     * @param {String} groupValue 
+     * @param {Number} rowCount 
+     * @param {Boolean} isCollapsed 
+     * @returns {HTMLElement}
+     */
+    createGroupHeader(groupValue, rowCount, isCollapsed) {
+        const headerRow = document.createElement('tr');
+        headerRow.classList.add('table-group-header');
+        headerRow.dataset.groupValue = groupValue;
+        headerRow.dataset.isGroupHeader = 'true';
+        headerRow.dataset.collapsed = isCollapsed;
+        
+        headerRow.style.display = 'table-row';
+        
+        const cell = document.createElement('td');
+        cell.setAttribute('colspan', this.config.headers.length);
+        
+        const icon = document.createElement('span');
+        icon.classList.add('group-toggle-icon');
+        icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+        icon.innerHTML = '&#8250;';
+        
+        const titleSpan = document.createElement('span');
+        titleSpan.classList.add('group-title-text');
+        
+        // use custom formatter if provided
+        let formattedText = '';
+        if(this.config.groupFormatter !== null) {
+            try {
+                formattedText = this.config.groupFormatter(groupValue, rowCount);
+            } catch(e) {
+                console.error('Error in groupFormatter:', e);
+                formattedText = `${groupValue} (${rowCount} öğe)`;
+            }
+        } else {
+            formattedText = `${groupValue} (${rowCount} öğe)`;
+        }
+        titleSpan.textContent = formattedText;
+        
+        cell.appendChild(icon);
+        cell.appendChild(titleSpan);
+        headerRow.appendChild(cell);
+        
+        // add click handler
+        const self = this;
+        const currentGroupValue = groupValue;
+        headerRow.onclick = (e) => {
+            e.stopPropagation();
+            self.toggleGroup(currentGroupValue, headerRow);
+        };
+        
+        return headerRow;
+    }
+    
+    /**
+     * Toggle group collapse/expand state
+     * @param {String} groupValue 
+     * @param {HTMLElement} groupHeaderRow - Optional: the header row element
+     */
+    toggleGroup(groupValue, groupHeaderRow = null) {
+        // toggle collapsed state
+        this.config.groupCollapsed[groupValue] = !this.config.groupCollapsed[groupValue];
+        const isCollapsed = this.config.groupCollapsed[groupValue];
+        
+        // use provided header row or find it
+        let headerRow = groupHeaderRow;
+        if(!headerRow) {
+            // Fallback: find all headers and match by dataset
+            const allHeaders = this.config.body.querySelectorAll('tr[data-is-group-header="true"]');
+            for(let i = 0; i < allHeaders.length; i++) {
+                if(allHeaders[i].dataset.groupValue === groupValue) {
+                    headerRow = allHeaders[i];
+                    break;
+                }
+            }
+        }
+        
+        if(headerRow) {
+            headerRow.dataset.collapsed = isCollapsed;
+            
+            // update icon
+            const icon = headerRow.querySelector('.group-toggle-icon');
+            if(icon) {
+                icon.style.transform = isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)';
+            }
+        }
+        
+        // find all rows in this group
+        const groupRows = this.config.body.querySelectorAll(`tr[data-group]`);
+        let matchedRows = 0;
+        groupRows.forEach(row => {
+            if(row.dataset.group === groupValue) {
+                row.style.display = isCollapsed ? 'none' : '';
+                row.dataset.collapsed = isCollapsed;
+                matchedRows++;
+            }
+        });
+        
+        // trigger callback
+        if(this.config.groupToggleCallback !== null) {
+            this.config.groupToggleCallback(groupValue, isCollapsed);
+        }
+    }
+    
     //#endregion
 }
+
