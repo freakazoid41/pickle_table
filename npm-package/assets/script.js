@@ -889,22 +889,162 @@ export default class PickleTable {
         for(const [groupValue, groupRows] of Object.entries(grouped)) {
             const isCollapsed = this.config.groupCollapsed[groupValue] || false;
             
-            // create and add group header
-            const groupHeaderRow = this.createGroupHeader(groupValue, groupRows.length, isCollapsed);
-            this.config.body.appendChild(groupHeaderRow);
+            // CHECK: Does this group header already exist?
+            let existingHeader = null;
+            if(this.groupHeaderElements && this.groupHeaderElements[groupValue]) {
+                existingHeader = this.groupHeaderElements[groupValue];
+            }
             
-            // store reference for later toggle operations
-            if(!this.groupHeaderElements) this.groupHeaderElements = {};
-            this.groupHeaderElements[groupValue] = groupHeaderRow;
-            
-            // add rows for this group
-            for(let i = 0; i < groupRows.length; i++) {
-                const rowData = groupRows[i];
-                if(rowData.id === undefined) rowData.id = (new Date()).getTime();
+            if(existingHeader) {
+                // GROUP ALREADY EXISTS - Find position to insert new rows
+                let insertAfter = existingHeader;
+                const allRows = Array.from(this.config.body.querySelectorAll('tr'));
+                const headerIndex = allRows.indexOf(existingHeader);
                 
-                // add row with group information
-                this.addRow(rowData, false, false, rowIndex, groupValue, isCollapsed);
-                rowIndex++;
+                // Count current rows in this group
+                let currentRowCount = 0;
+                for(let i = headerIndex + 1; i < allRows.length; i++) {
+                    const row = allRows[i];
+                    // If this is another group header, we've reached the end of our group
+                    if(row.dataset.isGroupHeader === 'true') {
+                        break;
+                    }
+                    // This row belongs to our group
+                    if(row.dataset.group === groupValue) {
+                        insertAfter = row;
+                        currentRowCount++;
+                    }
+                }
+                
+                // Add new rows after the last row of this group
+                for(let i = 0; i < groupRows.length; i++) {
+                    const rowData = groupRows[i];
+                    if(rowData.id === undefined) rowData.id = (new Date()).getTime();
+                    
+                    // Build row element using full addRow logic
+                    const rowElm = document.createElement('tr');
+                    rowElm.dataset.group = groupValue;
+                    rowElm.dataset.collapsed = isCollapsed;
+                    if(isCollapsed) rowElm.style.display = 'none';
+                    
+                    // Initialize columnElms tracking
+                    rowData.columnElms = {};
+                    
+                    // Trigger row formatter if exist
+                    let formattedData = rowData;
+                    if(this.config.rowFormatter !== null){
+                        const modifiedData = this.config.rowFormatter(rowElm, rowData);
+                        if(modifiedData !== undefined) formattedData = modifiedData;
+                    }
+                    
+                    // Set row click if set
+                    if(this.config.rowClick !== null){
+                        rowElm.onclick = () => this.config.rowClick(rowElm, formattedData);
+                    }
+                    
+                    // Add cells with all formatters and callbacks
+                    const columnAddedCallbacks = [];
+                    for(let j = 0; j < this.config.headers.length; j++){
+                        const column = document.createElement('td');
+                        if(this.config.headers[j].colAlign !== undefined) column.style.textAlign = this.config.headers[j].colAlign;
+                        
+                        // Trigger column formatter if exist
+                        if(this.config.headers[j].columnFormatter !== undefined){
+                            const newData = this.config.headers[j].columnFormatter(column, formattedData, formattedData[this.config.headers[j].key]);
+                            if(typeof newData === 'object'){
+                                column.appendChild(newData);
+                            }else{
+                                column.innerHTML = newData;
+                            }
+                        }else{
+                            column.innerHTML = formattedData[this.config.headers[j].key];
+                        }
+                        
+                        // Check if header is visible
+                        const isVisible = !(document.querySelector('th[data-key="'+this.config.headers[j].key+'"]').style.display === 'none');
+                        if(!isVisible) column.style.display = 'none';
+                        
+                        rowElm.appendChild(column);
+                        
+                        // Store column reference
+                        formattedData.columnElms[this.config.headers[j].key] = column;
+                        
+                        // Trigger column created event callback
+                        if(this.config.headers[j].columnCreated !== undefined){
+                            columnAddedCallbacks.push({
+                                event  : this.config.headers[j].columnCreated,
+                                column : column,
+                                row    : rowElm,
+                                data : formattedData,
+                                columnData : formattedData[this.config.headers[j].key]
+                            });
+                        }
+                        
+                        // Set column click if exist
+                        if(this.config.headers[j].columnClick !== undefined){
+                            column.onclick = () => this.config.headers[j].columnClick(column, formattedData, formattedData[this.config.headers[j].key]);
+                        }
+                    }
+                    
+                    // Store row element reference
+                    formattedData.rowElm = rowElm;
+                    
+                    // Add to current data
+                    this.config.currentData['row_'+formattedData.id] = formattedData;
+                    
+                    // Insert row after insertAfter
+                    if(insertAfter.nextSibling) {
+                        this.config.body.insertBefore(rowElm, insertAfter.nextSibling);
+                    } else {
+                        this.config.body.appendChild(rowElm);
+                    }
+                    insertAfter = rowElm;
+                    rowIndex++;
+                    
+                    // Execute rowAdded callback if exist
+                    if(this.config.rowAdded != null) this.config.rowAdded(rowElm, formattedData);
+                    
+                    // Execute column added callbacks if exist
+                    for(let k = 0; k < columnAddedCallbacks.length; k++) {
+                        const event = columnAddedCallbacks[k];
+                        event.event(event.column, event.row, event.data, event.columnData);
+                    }
+                }
+                
+                // Update header row count
+                const totalRowCount = currentRowCount + groupRows.length;
+                const titleCell = existingHeader.querySelector('span.group-title-text');
+                if(titleCell) {
+                    if(this.config.groupFormatter !== null) {
+                        try {
+                            const formattedText = this.config.groupFormatter(groupValue, totalRowCount);
+                            titleCell.textContent = formattedText;
+                        } catch(e) {
+                            console.error('Error in groupFormatter:', e);
+                            titleCell.textContent = `${groupValue} (${totalRowCount} öğe)`;
+                        }
+                    } else {
+                        titleCell.textContent = `${groupValue} (${totalRowCount} öğe)`;
+                    }
+                }
+            } else {
+                // GROUP DOESN'T EXIST - Create new header and rows
+                const groupHeaderRow = this.createGroupHeader(groupValue, groupRows.length, isCollapsed);
+                this.config.body.appendChild(groupHeaderRow);
+                
+                // store reference for later toggle operations
+                if(!this.groupHeaderElements) this.groupHeaderElements = {};
+                this.groupHeaderElements[groupValue] = groupHeaderRow;
+                
+                // add rows for this group
+                for(let i = 0; i < groupRows.length; i++) {
+                    const rowData = groupRows[i];
+                    if(rowData.id === undefined) rowData.id = (new Date()).getTime();
+                    
+                    // add row with group information
+                    this.addRow(rowData, false, false, rowIndex, groupValue, isCollapsed);
+                    rowIndex++;
+                }
             }
         }
     }
